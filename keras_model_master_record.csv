@@ -1,0 +1,2 @@
+model_file,accuracy,precision,recall,training_time
+D:/Downloads/amazon/models/agriculture-20170506-110533.h5,0.86463434951,0.749517652685,0.841348798241,0 days 01:59:20.815000000
