@@ -8,7 +8,9 @@ import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import os
 
 record_file = 'keras_model_master_record.csv'
+score_file = 'master_scoreboard.csv'
 
+#deprecated. use record_model_scores
 def record_model_medata(model_file, history, training_time):
 	if os.path.exists(record_file):
 		df = pd.read_csv(record_file)
@@ -29,6 +31,29 @@ def record_model_medata(model_file, history, training_time):
 		'training_time': training_time}, ignore_index=True)
 	#print(df)
 	df.to_csv(record_file, index=False)
+
+def record_model_scores(model_file, history, f2_score, training_time, num_channels):
+	if os.path.exists(score_file):
+		df = pd.read_csv(score_file)
+	else:
+		columns = ['model_file', 'f2_score', 'accuracy', 'precision', 'recall', 'training_time', 'num_channels']
+		df = pd.DataFrame(data=np.zeros((0,len(columns))), columns=columns)
+
+	# get the scores from the last epoch
+	accuracy = history.history['acc'][-1]
+	precision = history.history['precision'][-1]
+	recall = history.history['recall'][-1]
+
+	df = df.append({
+		'model_file':model_file, 
+		'f2_score':f2_score,
+		'accuracy': accuracy,
+		'precision': precision,
+		'recall': recall,
+		'training_time': training_time,
+		'num_channels': num_channels
+		}, ignore_index=True)
+	df.to_csv(score_file, index=False)
 
 def test_import():
 	print('local module import successful')

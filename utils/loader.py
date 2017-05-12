@@ -5,13 +5,15 @@ import h5py
 import cv2
 from tqdm import tqdm
 
-# TODO: move these to a config file
+# TODO: move these to amazon.cfg config file
 data_dir = 'D:/Downloads/amazon/'
 cache_dir = data_dir + 'cache/'
-train_file_format = 'train-jpg/{}.jpg'
-test_file_format = 'test/test-jpg/{}.jpg'
-training_set_file_path_format = cache_dir + 'train_set_dim{}.h5'
-test_set_file_path_format = cache_dir + 'test_set_dim{}.h5'
+train_file_format_jpg = 'train-jpg/{}.jpg'
+test_file_format_jpg = 'test/test-jpg/{}.jpg'
+train_file_format_tif = 'train-tif-v2/{}.tif'
+test_file_format_tif = 'test/test-tif-v2/{}.tif'
+training_set_file_path_format = cache_dir + 'train_set_dim{}_rgbn.h5'
+test_set_file_path_format = cache_dir + 'test_set_dim{}_rgbn.h5'
 
 # Attempts to load data from cache. If data doesnt exist in cache, load from source
 def load_training_set(df_train, rescaled_dim):
@@ -34,11 +36,16 @@ def load_training_set_from_source(df_train, rescaled_dim):
 	x_train_from_src = []
 	y_train_from_src = []
 	for f, tags in tqdm(df_train.values, miniters=1000):
-		img = cv2.imread(data_dir + train_file_format.format(f))
+		# combine the RGB values from jpg and NIR value from tif into one array
+		img = cv2.imread(data_dir + train_file_format_jpg.format(f))
+		rgbn_img = cv2.imread(data_dir + train_file_format_tif.format(f), cv2.IMREAD_UNCHANGED)
+		nir = rgbn_img[:, :, 3]
+		nir = np.expand_dims(nir, axis=2)
+		combined_img = np.concatenate((img, nir), axis=2)
 		targets = np.zeros(17)
 		for t in tags.split(' '):
 			targets[label_map[t]] = 1 
-		x_train_from_src.append(cv2.resize(img, (rescaled_dim, rescaled_dim)))
+		x_train_from_src.append(cv2.resize(combined_img, (rescaled_dim, rescaled_dim)))
 		y_train_from_src.append(targets)
 	y_train_from_src = np.array(y_train_from_src, np.uint8) # for GPU compute efficiency
 	x_train_from_src = np.array(x_train_from_src, np.uint8)
@@ -61,7 +68,11 @@ def load_test_set(df_test, rescaled_dim):
 def load_test_set_from_source(df_test, rescaled_dim):
 	x_test_from_src = []
 	for f, tags in tqdm(df_test.values, miniters=1000):
-		img = cv2.imread(data_dir + test_file_format.format(f))
-		x_test_from_src.append(cv2.resize(img, (rescaled_dim, rescaled_dim)))
+		img = cv2.imread(data_dir + test_file_format_jpg.format(f))
+		rgbn_img = cv2.imread(data_dir + test_file_format_tif.format(f), cv2.IMREAD_UNCHANGED)
+		nir = rgbn_img[:, :, 3]
+		nir = np.expand_dims(nir, axis=2)
+		combined_img = np.concatenate((img, nir), axis=2)
+		x_test_from_src.append(cv2.resize(combined_img, (rescaled_dim, rescaled_dim)))
 	x_test_from_src = np.array(x_test_from_src, np.uint8) # for GPU compute efficiency
 	return x_test_from_src
