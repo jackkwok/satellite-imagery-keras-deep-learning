@@ -1,3 +1,4 @@
+import numpy as np
 from spectral import get_rgb, ndvi
 
 # geoTiff files store spectral data into 4 channels (B, G, R, NIR) in that order.
