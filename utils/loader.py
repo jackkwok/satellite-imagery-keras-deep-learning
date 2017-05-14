@@ -25,8 +25,8 @@ def load_training_set(df_train, rescaled_dim):
 	else:
 		train_x_local, train_y_local = load_training_set_from_source(df_train, rescaled_dim)
 		with h5py.File(training_file_path, 'w') as hf:
-			hf.create_dataset("training-x",  data=train_x_local)
-			hf.create_dataset("training-y",  data=train_y_local)
+			hf.create_dataset("training-x", data=train_x_local)
+			hf.create_dataset("training-y", data=train_y_local)
 	return train_x_local, train_y_local
 
 def load_training_set_from_source(df_train, rescaled_dim):
