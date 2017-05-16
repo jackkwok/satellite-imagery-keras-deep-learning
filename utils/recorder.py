@@ -32,11 +32,11 @@ def record_model_medata(model_file, history, training_time):
 	#print(df)
 	df.to_csv(record_file, index=False)
 
-def record_model_scores(model_file, model_id, history, f2_score, training_time, num_channels):
+def record_model_scores(model_file, model_id, history, f2_score, training_time, num_channels, data_mask):
 	if os.path.exists(score_file):
 		df = pd.read_csv(score_file)
 	else:
-		columns = ['model_file', 'model_id', 'f2_score', 'accuracy', 'precision', 'recall', 'training_time', 'num_channels']
+		columns = ['model_file', 'model_id', 'f2_score', 'accuracy', 'precision', 'recall', 'training_time', 'num_channels', 'data_mask']
 		df = pd.DataFrame(data=np.zeros((0,len(columns))), columns=columns)
 
 	# get the scores from the last epoch
@@ -52,7 +52,8 @@ def record_model_scores(model_file, model_id, history, f2_score, training_time, 
 		'precision': precision,
 		'recall': recall,
 		'training_time': training_time,
-		'num_channels': num_channels
+		'num_channels': num_channels,
+		'data_mask': data_mask
 		}, ignore_index=True)
 	df.to_csv(score_file, index=False)
 

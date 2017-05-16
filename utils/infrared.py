@@ -20,3 +20,9 @@ def compute_ndwi(bgrn_image):
     ndwi = (nrg[:, :, 2] - nrg[:, :, 0]) / \
         (nrg[:, :, 2] + nrg[:, :, 0]).astype(np.float64)
     return ndwi
+
+# index is in range -1.0 to +1.0 (float).  Normalize it to 0-255 (uint8) for efficient storage along with RGB values
+def normalized_index(vi):
+	normalized = vi + 1.0 # 0.0 to 2.0
+	normalized *= normalized * 255.0/2.0 # 0 to 255
+	return np.array(normalized, np.uint8)

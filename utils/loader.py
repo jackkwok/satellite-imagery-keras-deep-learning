@@ -4,6 +4,7 @@ import os
 import h5py
 import cv2
 from tqdm import tqdm
+from infrared import *
 
 # TODO: move these to amazon.cfg config file
 data_dir = 'D:/Downloads/amazon/'
@@ -12,8 +13,8 @@ train_file_format_jpg = 'train-jpg/{}.jpg'
 test_file_format_jpg = 'test/test-jpg/{}.jpg'
 train_file_format_tif = 'train-tif-v2/{}.tif'
 test_file_format_tif = 'test/test-tif-v2/{}.tif'
-training_set_file_path_format = cache_dir + 'train_set_dim{}_rgbn.h5'
-test_set_file_path_format = cache_dir + 'test_set_dim{}_rgbn.h5'
+training_set_file_path_format = cache_dir + 'train_set_dim{}_rgb_ndvi_ndwi_nir.h5'
+test_set_file_path_format = cache_dir + 'test_set_dim{}_rgb_ndvi_ndwi_nir.h5'
 
 # Attempts to load data from cache. If data doesnt exist in cache, load from source
 def load_training_set(df_train, rescaled_dim):
@@ -35,17 +36,27 @@ def load_training_set_from_source(df_train, rescaled_dim):
 	label_map = {l: i for i, l in enumerate(labels)}
 	x_train_from_src = []
 	y_train_from_src = []
+
 	for f, tags in tqdm(df_train.values, miniters=1000):
-		# combine the RGB values from jpg and NIR value from tif into one array
 		img = cv2.imread(data_dir + train_file_format_jpg.format(f))
-		rgbn_img = cv2.imread(data_dir + train_file_format_tif.format(f), cv2.IMREAD_UNCHANGED)
-		nir = rgbn_img[:, :, 3]
+		bgrn_img = cv2.imread(data_dir + train_file_format_tif.format(f), cv2.IMREAD_UNCHANGED)
+		img = cv2.resize(img, (rescaled_dim, rescaled_dim))
+		bgrn_img =cv2.resize(bgrn_img, (rescaled_dim, rescaled_dim))
+
+		ndvi = normalized_index(spectral_ndvi(bgrn_img))
+		ndvi = np.expand_dims(ndvi, axis=2)
+
+		ndwi = normalized_index(compute_ndwi(bgrn_img))
+		ndwi = np.expand_dims(ndwi, axis=2)
+
+		nir = bgrn_img[:, :, 3]
 		nir = np.expand_dims(nir, axis=2)
-		combined_img = np.concatenate((img, nir), axis=2)
+		# combine the RGB values from jpg, NDVI, NDWI, and NIR value into one array
+		combined_img = np.concatenate((img, ndvi, ndwi, nir), axis=2)
 		targets = np.zeros(17)
 		for t in tags.split(' '):
 			targets[label_map[t]] = 1 
-		x_train_from_src.append(cv2.resize(combined_img, (rescaled_dim, rescaled_dim)))
+		x_train_from_src.append(combined_img)
 		y_train_from_src.append(targets)
 	y_train_from_src = np.array(y_train_from_src, np.uint8) # for GPU compute efficiency
 	x_train_from_src = np.array(x_train_from_src, np.uint8)
@@ -69,10 +80,21 @@ def load_test_set_from_source(df_test, rescaled_dim):
 	x_test_from_src = []
 	for f, tags in tqdm(df_test.values, miniters=1000):
 		img = cv2.imread(data_dir + test_file_format_jpg.format(f))
-		rgbn_img = cv2.imread(data_dir + test_file_format_tif.format(f), cv2.IMREAD_UNCHANGED)
-		nir = rgbn_img[:, :, 3]
+		bgrn_img = cv2.imread(data_dir + test_file_format_tif.format(f), cv2.IMREAD_UNCHANGED)
+		img = cv2.resize(img, (rescaled_dim, rescaled_dim))
+		bgrn_img =cv2.resize(bgrn_img, (rescaled_dim, rescaled_dim))
+
+		ndvi = normalized_index(spectral_ndvi(bgrn_img))
+		ndvi = np.expand_dims(ndvi, axis=2)
+
+		ndwi = normalized_index(compute_ndwi(bgrn_img))
+		ndwi = np.expand_dims(ndwi, axis=2)
+
+		nir = bgrn_img[:, :, 3]
 		nir = np.expand_dims(nir, axis=2)
-		combined_img = np.concatenate((img, nir), axis=2)
-		x_test_from_src.append(cv2.resize(combined_img, (rescaled_dim, rescaled_dim)))
+
+		# combine the RGB values from jpg, NDVI, NDWI, and NIR value into one array
+		combined_img = np.concatenate((img, ndvi, ndwi, nir), axis=2)
+		x_test_from_src.append(combined_img)
 	x_test_from_src = np.array(x_test_from_src, np.uint8) # for GPU compute efficiency
 	return x_test_from_src

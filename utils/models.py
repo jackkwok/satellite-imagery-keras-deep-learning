@@ -43,6 +43,8 @@ def JAGG_1(num_channels, rescaled_dim1, rescaled_dim2):
 	return model
 
 # double the capacity of JAGG_1
+# Best Model
+# performance has not plateau at 50 epoch. keep going.
 def JAGG_2(num_channels, rescaled_dim1, rescaled_dim2):
 	model = Sequential()
 
