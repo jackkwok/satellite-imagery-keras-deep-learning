@@ -8,7 +8,9 @@ from keras.models import load_model
 def get_model(model_id, num_channels, rescaled_dim1, rescaled_dim2):
 	model_dict = {
 		'JAGG_1': JAGG_1,
+		'JAGG_1_1': JAGG_1_1,
 		'JAGG_2': JAGG_2,
+		'JAGG_3': JAGG_3,
 		'VGG_16': VGG_16
 	}
 	return model_dict[model_id](num_channels, rescaled_dim1, rescaled_dim2)
@@ -31,6 +33,34 @@ def JAGG_1(num_channels, rescaled_dim1, rescaled_dim2):
 	model.add(Convolution2D(128, 3, 3))
 	model.add(Activation('relu'))
 	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Flatten())
+	model.add(Dense(64, activation='relu'))
+# dropout of 0.2 - 0.5 is recommended :
+# http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
+# Keep in mind dropouts overuse will hurt model performance
+	model.add(Dropout(0.5))
+	model.add(Dense(17, activation='sigmoid'))
+
+	return model
+
+# removed 2 pooling layers from JAGG_1
+def JAGG_1_1(num_channels, rescaled_dim1, rescaled_dim2):
+	model = Sequential()
+
+	model.add(Convolution2D(32, 3, 3, input_shape=(num_channels, rescaled_dim1, rescaled_dim2)))  
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(32, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+
+	model.add(Convolution2D(128, 3, 3))
+	model.add(Activation('relu'))
 
 	model.add(Flatten())
 	model.add(Dense(64, activation='relu'))
@@ -66,6 +96,38 @@ def JAGG_2(num_channels, rescaled_dim1, rescaled_dim2):
 
 	model.add(Flatten())
 	model.add(Dense(128, activation='relu'))
+# dropout of 0.2 - 0.5 is recommended :
+# http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
+# Keep in mind dropouts overuse will hurt model performance
+	model.add(Dropout(0.5))
+	model.add(Dense(17, activation='sigmoid'))
+
+	return model
+
+# add ab extra conv block to JAGG_1
+def JAGG_3(num_channels, rescaled_dim1, rescaled_dim2):
+	model = Sequential()
+
+	model.add(Convolution2D(32, 3, 3, input_shape=(num_channels, rescaled_dim1, rescaled_dim2)))  
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(32, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+
+	model.add(Convolution2D(128, 3, 3))
+	model.add(Activation('relu'))
+
+	model.add(Flatten())
+	model.add(Dense(64, activation='relu'))
 # dropout of 0.2 - 0.5 is recommended :
 # http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
 # Keep in mind dropouts overuse will hurt model performance
