@@ -6,11 +6,12 @@ class NormalizedByFeature(object):
 		# TODO augment with random rotations for rare classes
 		return ImageDataGenerator(
         	featurewise_std_normalization=True,
+        	horizontal_flip=True,
+        	vertical_flip=True,
         	rescale=None,
         	shear_range=0.0,
-        	zoom_range=0.0,
-        	horizontal_flip=True,
-        	vertical_flip=True)
+        	zoom_range=0.0
+        	)
     
     def getValidationGenenerator(self):
 		return ImageDataGenerator(

@@ -32,27 +32,38 @@ def record_model_medata(model_file, history, training_time):
 	#print(df)
 	df.to_csv(record_file, index=False)
 
-def record_model_scores(model_file, model_id, history, f2_score, training_time, num_channels, data_mask):
+def record_model_scores(model_file, model_id, history, f2_score, training_time, num_channels, config, data_mask):
 	if os.path.exists(score_file):
 		df = pd.read_csv(score_file)
 	else:
-		columns = ['model_file', 'model_id', 'f2_score', 'accuracy', 'precision', 'recall', 'training_time', 'num_channels', 'data_mask']
+		columns = ['model_file', 'model_id', 'f2_score', 
+			'val_accuracy', 'val_precision', 'val_recall',
+		 	'train_accuracy', 'train_precision', 'train_recall',
+		  	'training_time', 'num_channels', 'config', 'data_mask']
 		df = pd.DataFrame(data=np.zeros((0,len(columns))), columns=columns)
 
 	# get the scores from the last epoch
-	accuracy = history.history['acc'][-1]
-	precision = history.history['precision'][-1]
-	recall = history.history['recall'][-1]
+	val_accuracy = history.history['val_acc'][-1]
+	val_precision = history.history['val_precision'][-1]
+	val_recall = history.history['val_recall'][-1]
+
+	train_accuracy = history.history['acc'][-1]
+	train_precision = history.history['precision'][-1]
+	train_recall = history.history['recall'][-1]
 
 	df = df.append({
 		'model_file': model_file, 
 		'model_id': model_id,
 		'f2_score': f2_score,
-		'accuracy': accuracy,
-		'precision': precision,
-		'recall': recall,
+		'val_accuracy': val_accuracy,
+		'val_precision': val_precision,
+		'val_recall': val_recall,
+		'train_accuracy': train_accuracy,
+		'train_precision': train_precision,
+		'train_recall': train_recall,
 		'training_time': training_time,
 		'num_channels': num_channels,
+		'config': config,
 		'data_mask': data_mask
 		}, ignore_index=True)
 	df.to_csv(score_file, index=False)
