@@ -65,6 +65,7 @@ def load_training_set_from_source(df_train, rescaled_dim):
 	return x_train_from_src, y_train_from_src
 
 # Attempts to load data from cache. If data doesnt exist in cache, load from source
+# Warning: large data set may not fit in memory (RAM)
 def load_test_set(df_test, rescaled_dim):
 	test_set_file_path = test_set_file_path_format.format(rescaled_dim)
 	if os.path.exists(test_set_file_path):
@@ -98,3 +99,13 @@ def load_test_set_from_source(df_test, rescaled_dim):
 		x_test_from_src.append(combined_img)
 	x_test_from_src = np.array(x_test_from_src, np.uint8) # for GPU compute efficiency
 	return x_test_from_src
+
+# load a subset of test data for batch processing
+def load_test_subset_from_cache(rescaled_dim, start, end):
+	test_set_file_path = test_set_file_path_format.format(rescaled_dim)
+	if os.path.exists(test_set_file_path):
+		with h5py.File(test_set_file_path, 'r') as hf:
+			test_x_local = hf['test-x'][start:end]
+	else:
+		raise ValueError('data not found in cache')
+	return test_x_local
