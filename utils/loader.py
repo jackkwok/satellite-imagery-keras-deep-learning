@@ -16,8 +16,8 @@ test_file_format_tif = 'test/test-tif-v2/{}.tif'
 training_set_file_path_format = cache_dir + 'train_set_dim{}_rgb_ndvi_ndwi_nir.h5'
 test_set_file_path_format = cache_dir + 'test_set_dim{}_rgb_ndvi_ndwi_nir.h5'
 
-# Attempts to load data from cache. If data doesnt exist in cache, load from source
 def load_training_set(df_train, rescaled_dim):
+	"""Attempts to load data from cache. If data doesnt exist in cache, load from source"""
 	training_file_path = training_set_file_path_format.format(rescaled_dim)
 	if os.path.exists(training_file_path):
 		with h5py.File(training_file_path, 'r') as hf:
@@ -64,9 +64,9 @@ def load_training_set_from_source(df_train, rescaled_dim):
 	print(y_train_from_src.shape)
 	return x_train_from_src, y_train_from_src
 
-# Attempts to load data from cache. If data doesnt exist in cache, load from source
 # Warning: large data set may not fit in memory (RAM)
 def load_test_set(df_test, rescaled_dim):
+	"""Attempts to load data from cache. If data doesnt exist in cache, load from source"""
 	test_set_file_path = test_set_file_path_format.format(rescaled_dim)
 	if os.path.exists(test_set_file_path):
 		with h5py.File(test_set_file_path, 'r') as hf:
@@ -100,8 +100,8 @@ def load_test_set_from_source(df_test, rescaled_dim):
 	x_test_from_src = np.array(x_test_from_src, np.uint8) # for GPU compute efficiency
 	return x_test_from_src
 
-# load a subset of test data for batch processing
 def load_test_subset_from_cache(rescaled_dim, start, end):
+	"""load (from cache) a subset of test data for batch processing"""
 	test_set_file_path = test_set_file_path_format.format(rescaled_dim)
 	if os.path.exists(test_set_file_path):
 		with h5py.File(test_set_file_path, 'r') as hf:

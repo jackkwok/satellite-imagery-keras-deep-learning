@@ -11,7 +11,9 @@ def get_model(model_id, num_channels, rescaled_dim1, rescaled_dim2):
 		'JAGG_1_1': JAGG_1_1,
 		'JAGG_2': JAGG_2,
 		'JAGG_2_BN': JAGG_2_BN,
+		'JAGG_2_D4X': JAGG_2_D4X,
 		'JAGG_3': JAGG_3,
+		'JAGG_4': JAGG_4,
 		'VGG_16': VGG_16
 	}
 	return model_dict[model_id](num_channels, rescaled_dim1, rescaled_dim2)
@@ -75,7 +77,6 @@ def JAGG_1_1(num_channels, rescaled_dim1, rescaled_dim2):
 
 # double the capacity of JAGG_1
 # Best Model
-# performance has not plateau at 50 epoch. keep going.
 def JAGG_2(num_channels, rescaled_dim1, rescaled_dim2):
 	model = Sequential()
 
@@ -97,6 +98,42 @@ def JAGG_2(num_channels, rescaled_dim1, rescaled_dim2):
 
 	model.add(Flatten())
 	model.add(Dense(128, activation='relu'))
+# dropout of 0.2 - 0.5 is recommended :
+# http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
+# Keep in mind dropouts overuse will hurt model performance
+	model.add(Dropout(0.5))
+	model.add(Dense(17, activation='sigmoid'))
+
+	return model
+
+# 4X the number of neurons in the Dense layer after flattening the final conv layer
+# Added dropouts after each conv block
+# No improvement over JAGG_2
+def JAGG_2_D4X(num_channels, rescaled_dim1, rescaled_dim2):
+	model = Sequential()
+
+	model.add(Convolution2D(64, 3, 3, input_shape=(num_channels, rescaled_dim1, rescaled_dim2)))  
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Convolution2D(128, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Convolution2D(256, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Flatten())
+	model.add(Dense(512, activation='relu'))
 # dropout of 0.2 - 0.5 is recommended :
 # http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
 # Keep in mind dropouts overuse will hurt model performance
@@ -163,6 +200,54 @@ def JAGG_3(num_channels, rescaled_dim1, rescaled_dim2):
 
 	model.add(Flatten())
 	model.add(Dense(64, activation='relu'))
+# dropout of 0.2 - 0.5 is recommended :
+# http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
+# Keep in mind dropouts overuse will hurt model performance
+	model.add(Dropout(0.5))
+	model.add(Dense(17, activation='sigmoid'))
+
+	return model
+
+# 7 conv layers total with dropout, padding, maxpooling.  Deepest model yet.
+# Unexpectedly, JAGG_4 takes only slightly over 1 hour to complete training.
+# JAGG_2 performs slightly better than JAGG_4.
+def JAGG_4(num_channels, rescaled_dim1, rescaled_dim2):
+	model = Sequential()
+
+	model.add(Convolution2D(64, 3, 3, input_shape=(num_channels, rescaled_dim1, rescaled_dim2)))  
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(128, 3, 3))
+	model.add(Activation('relu'))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(128, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(256, 3, 3))
+	model.add(Activation('relu'))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(256, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Flatten())
+	model.add(Dense(512, activation='relu'))
 # dropout of 0.2 - 0.5 is recommended :
 # http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
 # Keep in mind dropouts overuse will hurt model performance
