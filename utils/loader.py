@@ -31,6 +31,7 @@ def load_training_set(df_train, rescaled_dim):
 	return train_x_local, train_y_local
 
 def load_training_set_from_source(df_train, rescaled_dim):
+	"""load and return train X and train Y. Each train X sample has 6 channels (uint8): R, G, B, NDVI, NDWI, NIR in that order.  Order of returned samples matches ordering of samples in df_train"""
 	flatten = lambda l: [item for sublist in l for item in sublist]
 	labels = list(set(flatten([l.split(' ') for l in df_train['tags'].values])))
 	label_map = {l: i for i, l in enumerate(labels)}
