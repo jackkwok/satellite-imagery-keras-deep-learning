@@ -10,8 +10,10 @@ def f2_optimized_thresholds(y_true, y_pred, verbose=True, resolution=100):
     score = fbeta_score(y_true, p2, beta=2, average='samples')
     return score
 
-  x = [0.5]*17
-  for i in range(17):
+  classifiers_length = y_true.shape[1]
+
+  x = [0.5] * classifiers_length
+  for i in range(classifiers_length):
     best_i2 = 0
     best_score = 0
     for i2 in range(resolution):
