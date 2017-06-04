@@ -5,8 +5,8 @@ from spectral import get_rgb
 from skimage.measure import structural_similarity as ssim
 from sklearn.preprocessing import MinMaxScaler
 
-def align_tif_to_jpg(image_tif_bgrn, image_jpg_bgr):
-# Code from http://www.learnopencv.com/image-alignment-ecc-in-opencv-c-python/
+def get_affine_matrix(image_tif_bgrn, image_jpg_bgr, verbose=False):
+# Code adpated from http://www.learnopencv.com/image-alignment-ecc-in-opencv-c-python/
 # Parametric Image Alignment using Enhanced Correlation Coefficient Maximization
 	im1= image_jpg_bgr
 	im2= image_tif_bgrn
@@ -24,7 +24,6 @@ def align_tif_to_jpg(image_tif_bgrn, image_jpg_bgr):
 
 	#plt.imshow(im2_gray, cmap = plt.cm.gray)
 	
-	sz = im1.shape
 	warp_mode = cv2.MOTION_TRANSLATION
 	warp_matrix = np.eye(2, 3, dtype=np.float32)
 
@@ -41,15 +40,36 @@ def align_tif_to_jpg(image_tif_bgrn, image_jpg_bgr):
 		warp_matrix, 
 		warp_mode, 
 		criteria)
-	tif_aligned = cv2.warpAffine(
-		im2, 
-		warp_matrix, 
-		(sz[1],sz[0]), 
-		flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP, 
-		borderMode = cv2.BORDER_CONSTANT, 
-		borderValue = (0, 0, 0))
+
+	#print(warp_matrix)
 
 	tx = warp_matrix[0,2]
 	ty = warp_matrix[1,2]
 
-	return tif_aligned, tx, ty, correlation
+	warp_matrix[0,2] = np.round(tx)
+	warp_matrix[1,2] = np.round(ty)
+
+	tx = warp_matrix[0,2]
+	ty = warp_matrix[1,2]
+
+	#print(warp_matrix)
+	if verbose:
+		print('tx:{} ty:{} corr:{}'.format(tx, ty, np.round(correlation, decimals=2)))
+
+	return correlation, warp_matrix
+
+def align_target_tif_to_jpg(image_tif_bgrn, image_jpg_bgr, target, verbose=False):
+	"""compute translational tranform matrix mapping image_tif to image_jpg and then apply the same matrix transform to target"""
+	correlation, warp_matrix = get_affine_matrix(image_tif_bgrn, image_jpg_bgr)
+
+	sz = image_jpg_bgr.shape
+
+	tif_aligned = cv2.warpAffine(
+		target,
+		warp_matrix,
+		(sz[1],sz[0]),
+		flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP, 
+		borderMode = cv2.BORDER_CONSTANT, 
+		borderValue = 0)
+
+	return tif_aligned

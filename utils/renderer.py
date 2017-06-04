@@ -44,10 +44,7 @@ def show_tiff_rgb(tiff_filename):
 	show_tiff_image_data(bgrn_image)
 
 def show_tiff_image_data(bgrn_image):
-	# visualize TIF NIR channel
-	# plt.imshow(bgrn_image[:,:,3])
-	# plt.title('NIR')
-	# plt.colorbar()
+	"""Show a rendering of scaled RGB of BGRN 4 channel image matrix"""
 	tif_rgb = get_rgb(bgrn_image, [2, 1, 0]) # RGB
 	# rescaling to 0-255 range - uint8 for display
 	rescaleIMG = np.reshape(tif_rgb, (-1, 1))
@@ -57,4 +54,11 @@ def show_tiff_image_data(bgrn_image):
 	new_style = {'grid': False}
 	plt.imshow(img_scaled)
 	plt.title('RGB')
+	plt.colorbar()
+
+def show_tiff_nir(bgrn_image):
+	# visualize TIF NIR channel
+	new_style = {'grid': False}
+	plt.imshow(bgrn_image[:,:,3])
+	plt.title('NIR')
 	plt.colorbar()
