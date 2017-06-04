@@ -33,6 +33,9 @@ from utils.f2thresholdfinder import *
 from utils.imagegen import *
 from utils.models import *
 from utils.custommetrics import *
+from utils.samplesduplicator import duplicate_train_samples
+from utils.training import *
+from utils.predictor import submission_dataframe
 
 from datetime import datetime
 import time
@@ -51,7 +54,7 @@ start_time = datetime.now()
 
 config_file = 'cfg/default.cfg'
 
-# e.g. > python aggregate_model.py cfg/3.cfg
+# command line e.g. > python aggregate_model.py cfg/3.cfg
 if len(sys.argv) > 1 and '.cfg' in sys.argv[1]:
     config_file = sys.argv[1]
 
@@ -84,7 +87,7 @@ print('model: {}'.format(model_id))
 
 # TODO understand the implications of this. this number usually does not include augmented images but:
 # +0.01 F2 score improvement when number_of_samples * 3
-num_samples_per_epoch = number_of_samples # number_of_samples * 3 
+num_samples_per_epoch = number_of_samples
 
 # default to 64
 rescaled_dim = 64
@@ -92,7 +95,7 @@ if settings.has_option('data', 'rescaled_dim'):
     rescaled_dim = settings.getint('data', 'rescaled_dim')
 print('rescaled dimension: {}'.format(rescaled_dim))
 
-# Per Keras FAQ, one epoch is defined as an arbitrary cutoff that is one pass over the entire training set
+# one epoch is an arbitrary cutoff : one pass over the entire training set
 number_epoch = settings.getint('model', 'number_epoch')
 
 # a batch results in exactly one update to the model.
@@ -100,13 +103,20 @@ number_epoch = settings.getint('model', 'number_epoch')
 batch_size = settings.getint('model', 'batch_size') 
 print('batch size: {}'.format(batch_size))
 
-classifier_threshold = 0.2
+classifier_threshold = 0.2 # used for end of epoch f2 approximation only
 
 split = int(number_of_samples * 0.80)  # TODO we may want to increase to 0.90 eventually
 number_validations = number_of_samples - split
 
+has_augmentation_config = settings.has_section('augmentation')
+if has_augmentation_config:
+    rotation_range = settings.getint('augmentation', 'rotation_range')
+    horizontal_flip = settings.getboolean('augmentation', 'horizontal_flip')
+    vertical_flip = settings.getboolean('augmentation', 'vertical_flip')
+    print('rotation_range:{} horizontal_flip:{} vertical_flip:{}'.format(rotation_range,horizontal_flip,vertical_flip))
 
-# In[6]:
+
+# In[4]:
 
 flatten = lambda l: [item for sublist in l for item in sublist]
 labels = list(set(flatten([l.split(' ') for l in df_train['tags'].values])))
@@ -115,20 +125,20 @@ print(labels)
 print(len(labels))
 
 
-# In[7]:
+# In[5]:
 
 label_map = {l: i for i, l in enumerate(labels)}
 inv_label_map = {i: l for l, i in label_map.items()}
 
 
-# In[8]:
+# In[6]:
 
 x_train, y_train = load_training_set(df_train, rescaled_dim)
 print(x_train.shape)
 print(y_train.shape)
 
 
-# In[9]:
+# In[27]:
 
 x_train = x_train[:, :, :, data_mask]
 
@@ -136,7 +146,9 @@ x_train = x_train.transpose(0,3,1,2)  # https://github.com/fchollet/keras/issues
 print(x_train.shape)
 
 
-# In[10]:
+# In[28]:
+
+# TODO save the shuffling order to hdf5 so we can recreate the training and validation sets post execution.
 
 # shuffle the samples because 
 # 1) the original samples may not be randomized & 
@@ -147,7 +159,7 @@ x_train, y_train = shuffle(x_train, y_train, random_state=0)
 x_train, x_valid, y_train, y_valid = x_train[:split], x_train[split:], y_train[:split], y_train[split:]
 
 
-# In[11]:
+# In[29]:
 
 print(x_train.shape)
 print(y_train.shape)
@@ -155,40 +167,66 @@ print(x_valid.shape)
 print(y_valid.shape)
 
 
-# In[12]:
+# In[30]:
 
-image_generator = ScaledDown() # NormalizedByFeature() offers seemingly no improvement but cost 30 min more to run.
+# WARNING!
+# experimental hack to get more samples for augmentations for a specific low-frequency tag in unbalanced dataset. e.g. habitation
+# selecting the optimal multiplier is sensitive
+
+augmentation_hack_config = settings.has_section('augmentation_hack')
+if augmentation_hack_config:
+    dup_multiplier = settings.getint('augmentation_hack', 'multiplier')
+    hack_label_target = settings.get('augmentation_hack', 'label_target')
+
+if augmentation_hack_config:
+    x_train, y_train = duplicate_train_samples(x_train, y_train, labels.index(hack_label_target), multiplier=dup_multiplier)
+    print(x_train.shape)
+    print(y_train.shape)
 
 
-# In[13]:
+# In[14]:
+
+def get_img_generator():
+    if has_augmentation_config:
+        return GeneralImgGen(rotation_range = rotation_range, 
+                             horizontal_flip = horizontal_flip, 
+                             vertical_flip = vertical_flip)
+    else:
+        return ScaledDown() # default
+    
+image_generator = get_img_generator()
+print('image generator', image_generator)
+
+
+# In[15]:
 
 # this is the augmentation configuration we will use for training
 # TODO augment with random rotations for rare classes
 train_datagen = image_generator.getTrainGenenerator()
 
 
-# In[14]:
+# In[16]:
 
 if (need_norm_stats):
     # need to compute internal stats like featurewise std and zca whitening
     train_datagen.fit(x_train)
 
 
-# In[15]:
+# In[17]:
 
 train_generator = train_datagen.flow(
-        x_train, 
-        y_train, 
+        x_train,
+        y_train,
         batch_size=batch_size,
         shuffle=True) 
 
 
-# In[16]:
+# In[18]:
 
 validation_datagen = image_generator.getValidationGenenerator()
 
 
-# In[17]:
+# In[19]:
 
 # workaround to provide your own stats: 
 # http://stackoverflow.com/questions/41855512/how-does-data-normalization-work-in-keras-during-prediction/43069409#43069409
@@ -197,7 +235,7 @@ if (need_norm_stats):
     validation_datagen.fit(x_valid)
 
 
-# In[18]:
+# In[20]:
 
 validation_generator = validation_datagen.flow(
         x_valid,
@@ -206,7 +244,7 @@ validation_generator = validation_datagen.flow(
         shuffle=False)
 
 
-# In[19]:
+# In[21]:
 
 model = get_model(model_id, num_channels, rescaled_dim, rescaled_dim)
 
@@ -219,7 +257,7 @@ model.compile(loss='binary_crossentropy', # Is this the best loss function?
               metrics=['accuracy', 'recall', 'precision'])
 
 
-# In[20]:
+# In[22]:
 
 # BUG when resuming training, the learning rate need to be decreased.
 # let's load an existing trained model and continue training more epoch gives 0.01 improvement in LB score.
@@ -230,10 +268,10 @@ model.compile(loss='binary_crossentropy', # Is this the best loss function?
 #number_epoch = 2
 
 
-# In[21]:
+# In[23]:
 
 # Ran into MemoryError when training DAGG_2 with 4 channels at epoch 50.
-# To try to get reduce memory usage, we are limited the number of samples and batch_size
+# To try to get reduce memory usage, limit the number of samples and batch_size
 
 validation_num_samples = min(1280, number_of_samples - split)
 x_valid_f2 = x_valid[:validation_num_samples]
@@ -244,7 +282,7 @@ def compute_f2_measure(l_model):
     val_generator_f2 = validation_datagen.flow(
         x_valid_f2,
         y_valid_f2,
-        batch_size=128,
+        batch_size=64,
         shuffle=False)
     raw_pred = l_model.predict_generator(val_generator_f2, validation_num_samples)
     thresholded_pred = (np.array(raw_pred) > classifier_threshold).astype(int)
@@ -260,13 +298,13 @@ class F2_Validation(k.callbacks.Callback):
 f2_score_val = F2_Validation()
 
 
-# In[22]:
+# In[24]:
 
 # stop overfitting on training data
 early_stop = EarlyStopping(monitor='val_loss',patience=3, min_delta=0, verbose=0, mode='auto')  # TODO patience and min_delta
 
 
-# In[23]:
+# In[25]:
 
 training_start_time = datetime.now()
 # fits the model on batches with real-time data augmentation:
@@ -416,55 +454,41 @@ fig.savefig(figures_dir + '/stats_' + timestr + '.png')
 #plt.show()
 
 
-# In[24]:
+# In[6]:
 
-#model = load_model(model_filepath)
+# load pre-trained model
+#model = load_model(data_dir + 'models/aggregate_model_20170521-141533.h5')
+#print(model.summary())
 
+# copied manually from stout
+#recorded_thresholds = [0.13, 0.13, 0.1, 0.14, 0.05, 0.23, 0.17, 0.15, 0.18, 0.23, 0.09, 0.21, 0.17, 0.10, 0.20, 0.23, 0.1]
 
-# In[27]:
-
-testset_dir = data_dir + 'test'
-
-df_test_list = pd.read_csv(sample_submission_filepath)
-
-x_test = load_test_set(df_test_list, rescaled_dim)
-
-x_test = x_test[:, :, :, data_mask]
+#image_generator = get_img_generator()
 
 
-# In[28]:
-
-#x_test = np.array(x_test, np.uint8)
-print(x_test.shape)
-x_test = x_test.transpose(0,3,1,2)  # https://github.com/fchollet/keras/issues/2681
-print(x_test.shape)
 
 
-# In[29]:
+# In[ ]:
 
 # this is the configuration we will use for testing:
 testset_datagen = image_generator.getTestGenenerator()
 
-if (need_norm_stats):
-    # need to compute internal stats like featurewise std and zca whitening
-    testset_datagen.fit(x_test)
 
+# In[7]:
 
-# In[30]:
+# populate the test dataset cache
+df_test = pd.read_csv(sample_submission_filepath)
+load_test_set(df_test, rescaled_dim)
 
-testset_generator = testset_datagen.flow(
-    x_test,
-    y=None,
-    batch_size=batch_size,
-    shuffle=False)
-    
-# ??? There may be a bug below that casues LB score to be 0.5-0.6
-# testset_generator = testset_datagen.flow_from_directory(
-#         testset_dir,
-#         target_size=(rescaled_dim, rescaled_dim),
-#         batch_size=batch_size,
-#         class_mode=None,
-#         shuffle=False)
+submit_df = submission_dataframe(model,
+                                 optimized_thresholds,
+                                 data_mask,
+                                 testset_datagen, 
+                                 rescaled_dim, 
+                                 labels, 
+                                 sample_submission_filepath,
+                                 need_norm_stats)
+submit_df.to_csv(data_dir + 'my_submissions/submission_' + timestr + '.csv', index=False)
 
 
 # In[31]:
@@ -478,25 +502,7 @@ testset_generator = testset_datagen.flow(
 
 # In[32]:
 
-# run predictions on test set
-testset_predict = model.predict_generator(testset_generator, x_test.shape[0]) # number of test samples
 
-y_testset_predictions = (np.array(testset_predict) > optimized_thresholds).astype(int)
-
-result = pd.DataFrame(y_testset_predictions, columns = labels)
-
-preds = []
-for i in tqdm(range(result.shape[0]), miniters=1000):
-    a = result.ix[[i]]
-    a = a.transpose()
-    a = a.loc[a[i] == 1]
-    ' '.join(list(a.index))
-    preds.append(' '.join(list(a.index)))
-
-df_test = pd.read_csv(sample_submission_filepath)
-df_test['tags'] = preds
-df_test
-print('done')
 
 
 # In[33]:
@@ -521,11 +527,6 @@ print('done')
 #     preds.append(' '.join(list(a.index)))
     
 # print(preds)
-
-
-# In[34]:
-
-df_test.to_csv(data_dir + 'my_submissions/submission_' + timestr + '.csv', index=False)
 
 
 # In[35]:
