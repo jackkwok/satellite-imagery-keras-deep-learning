@@ -14,8 +14,14 @@ train_file_format_jpg = 'train-jpg/{}.jpg'
 test_file_format_jpg = 'test/test-jpg/{}.jpg'
 train_file_format_tif = 'train-tif-v2/{}.tif'
 test_file_format_tif = 'test/test-tif-v2/{}.tif'
-training_set_file_path_format = cache_dir + 'train_set_dim{}_rgb_ndvi_ndwi_nir_align.h5'
-test_set_file_path_format = cache_dir + 'test_set_dim{}_rgb_ndvi_ndwi_nir_align.h5'
+training_set_file_path_format = cache_dir + 'train_set_dim{}_rgb_ndvi_ndwi_nir_align_v3.h5'
+test_set_file_path_format = cache_dir + 'test_set_dim{}_rgb_ndvi_ndwi_nir_align_v3.h5'
+
+# Note: we are loading the entire dataset into memory. Image data will not fit into memory without subsampling.
+# We can write our own generator that read data in batches. See detailed discussion:
+# https://github.com/fchollet/keras/issues/1627
+# Hack to use ImageDataGenerator without giving it all the data in one shot:
+# https://stackoverflow.com/questions/44012828/using-imagedatagenerator-with-large-datasets
 
 def load_training_set(df_train, rescaled_dim):
 	"""Attempts to load data from cache. If data doesnt exist in cache, load from source"""
@@ -32,7 +38,8 @@ def load_training_set(df_train, rescaled_dim):
 	return train_x_local, train_y_local
 
 def load_training_set_from_source(df_train, rescaled_dim):
-	"""load and return train X and train Y. Each train X sample has 6 channels (uint8): R, G, B, NDVI, NDWI, NIR in that order.  Order of returned samples matches ordering of samples in df_train"""
+	"""Load and return train X and train Y. Each train X sample has 6 channels (uint8): R, G, B, NDVI, NDWI, NIR in that order.  
+	Order of returned samples matches ordering of samples in df_train"""
 	flatten = lambda l: [item for sublist in l for item in sublist]
 	labels = list(set(flatten([l.split(' ') for l in df_train['tags'].values])))
 	label_map = {l: i for i, l in enumerate(labels)}
@@ -40,11 +47,11 @@ def load_training_set_from_source(df_train, rescaled_dim):
 	y_train_from_src = []
 
 	for f, tags in tqdm(df_train.values, miniters=1000):
-		img = cv2.imread(data_dir + train_file_format_jpg.format(f))
-		bgrn_img = cv2.imread(data_dir + train_file_format_tif.format(f), cv2.IMREAD_UNCHANGED)
-		img = cv2.resize(img, (rescaled_dim, rescaled_dim))
-		bgrn_img =cv2.resize(bgrn_img, (rescaled_dim, rescaled_dim))
-		combined_img = combine_derived_channels(img, bgrn_img, f)
+		jpg_img_orig = cv2.imread(data_dir + train_file_format_jpg.format(f))
+		bgrn_img_orig = cv2.imread(data_dir + train_file_format_tif.format(f), cv2.IMREAD_UNCHANGED)
+		jpg_img = cv2.resize(jpg_img_orig, (rescaled_dim, rescaled_dim))
+		bgrn_img =cv2.resize(bgrn_img_orig, (rescaled_dim, rescaled_dim))
+		combined_img = _combine_derived_channels(jpg_img_orig, bgrn_img_orig, jpg_img, bgrn_img, f)
 
 		targets = np.zeros(17)
 		for t in tags.split(' '):
@@ -57,7 +64,8 @@ def load_training_set_from_source(df_train, rescaled_dim):
 	print(y_train_from_src.shape)
 	return x_train_from_src, y_train_from_src
 
-def combine_derived_channels(jpg_img, bgrn_img, f):
+# Resizing (via downsampling) affects keypoints detection algo negatively so we need the orig JPG and TIFF
+def _combine_derived_channels(jpg_img_orig, bgrn_img_orig, jpg_img, bgrn_img, f):
 	"""Stack R,G,B from JPG and derived NDVI, NDWI, and NIR from TIFF into a 6 channel image matrix"""
 	ndvi = normalized_index(spectral_ndvi(bgrn_img))
 	ndvi = np.expand_dims(ndvi, axis=2)
@@ -71,17 +79,20 @@ def combine_derived_channels(jpg_img, bgrn_img, f):
 	# combine the TIFF derived values before realignment in one pass
 	tiff_derived = np.concatenate((ndvi, ndwi, nir), axis=2)
 
-	# realignment to address TIFF-JPG misalignment in data sets
+	# realignment to address TIFF-JPG misalignment in training and test data sets
 	try:
-		tiff_derived_aligned = align_target_tif_to_jpg(bgrn_img, jpg_img, tiff_derived, verbose=True)
+		tiff_derived_aligned = align_target_tif_to_jpg(bgrn_img_orig, jpg_img_orig, tiff_derived, verbose=False)
 		# combine the RGB values from jpg, NDVI, NDWI, and NIR value into one array
 		combined_img = np.concatenate((jpg_img, tiff_derived_aligned), axis=2)
-	except cv2.error:
-		print('Alignment Error: TIF and JPG not correlated {}'.format(f))
-		# tiff_derived_aligned = tiff_derived 
-		# hunch: better to fill with all zeros than using garbage data?
+	except ValueError, e:
+		# Assumption: better to fill with all zeros than using wrong TIFF data
 		tiff_derived.fill(0)
 		combined_img = np.concatenate((jpg_img, tiff_derived), axis=2)
+		print(str(e), f)
+	except KeypointDetectionException, e:
+		tiff_derived.fill(0)
+		combined_img = np.concatenate((jpg_img, tiff_derived), axis=2)
+		print(str(e), f)
 	
 	return combined_img
 
@@ -101,11 +112,11 @@ def load_test_set(df_test, rescaled_dim):
 def load_test_set_from_source(df_test, rescaled_dim):
 	x_test_from_src = []
 	for f, tags in tqdm(df_test.values, miniters=1000):
-		img = cv2.imread(data_dir + test_file_format_jpg.format(f))
-		bgrn_img = cv2.imread(data_dir + test_file_format_tif.format(f), cv2.IMREAD_UNCHANGED)
-		img = cv2.resize(img, (rescaled_dim, rescaled_dim))
-		bgrn_img =cv2.resize(bgrn_img, (rescaled_dim, rescaled_dim))
-		combined_img = combine_derived_channels(img, bgrn_img, f)
+		jpg_img_orig = cv2.imread(data_dir + test_file_format_jpg.format(f))
+		bgrn_img_orig = cv2.imread(data_dir + test_file_format_tif.format(f), cv2.IMREAD_UNCHANGED)
+		jpg_img = cv2.resize(jpg_img_orig, (rescaled_dim, rescaled_dim))
+		bgrn_img =cv2.resize(bgrn_img_orig, (rescaled_dim, rescaled_dim))
+		combined_img = _combine_derived_channels(jpg_img_orig, bgrn_img_orig, jpg_img, bgrn_img, f)
 
 		x_test_from_src.append(combined_img)
 	x_test_from_src = np.array(x_test_from_src, np.uint8) # for GPU compute efficiency
@@ -120,3 +131,10 @@ def load_test_subset_from_cache(rescaled_dim, start, end):
 	else:
 		raise ValueError('data not found in cache')
 	return test_x_local
+
+def is_test_set_in_cache(rescaled_dim):
+	test_set_file_path = test_set_file_path_format.format(rescaled_dim)
+	return os.path.exists(test_set_file_path)
+
+def get_training_set_file_path(rescaled_dim):
+	return training_set_file_path_format.format(rescaled_dim)

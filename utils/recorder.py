@@ -1,8 +1,6 @@
 # The purpose is to save a complete history of all trained model files and metadata including scores (accuracy, recall, precision)
 # This master record is saved as a csv file and will be used to compare which model is optimal by tying model performance with model files.
 
-# agriculture-20170505-234342.h5 - loss: 0.3806 - acc: 0.8214 - recall: 0.7893 - precision: 0.6662
-
 import numpy as np
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import os
@@ -32,14 +30,15 @@ def record_model_medata(model_file, history, training_time):
 	#print(df)
 	df.to_csv(record_file, index=False)
 
-def record_model_scores(model_file, model_id, history, f2_score, training_time, num_channels, config, data_mask):
+def record_model_scores(model_file, model_id, history, f2_score, training_time, num_channels, config, data_mask, data_set):
 	if os.path.exists(score_file):
 		df = pd.read_csv(score_file)
 	else:
 		columns = ['model_file', 'model_id', 'f2_score', 
 			'val_accuracy', 'val_precision', 'val_recall',
 		 	'train_accuracy', 'train_precision', 'train_recall',
-		  	'training_time', 'num_channels', 'config', 'data_mask']
+		  	'training_time', 'num_channels', 'config',
+		  	'data_mask', 'data_set']
 		df = pd.DataFrame(data=np.zeros((0,len(columns))), columns=columns)
 
 	# get the scores from the last epoch
@@ -54,17 +53,18 @@ def record_model_scores(model_file, model_id, history, f2_score, training_time, 
 	df = df.append({
 		'model_file': model_file, 
 		'model_id': model_id,
-		'f2_score': f2_score,
-		'val_accuracy': val_accuracy,
-		'val_precision': val_precision,
-		'val_recall': val_recall,
-		'train_accuracy': train_accuracy,
-		'train_precision': train_precision,
-		'train_recall': train_recall,
+		'f2_score': round(f2_score, 3),
+		'val_accuracy': round(val_accuracy, 3),
+		'val_precision': round(val_precision, 3),
+		'val_recall': round(val_recall, 3),
+		'train_accuracy': round(train_accuracy, 3),
+		'train_precision': round(train_precision, 3),
+		'train_recall': round(train_recall, 3),
 		'training_time': training_time,
 		'num_channels': num_channels,
 		'config': config,
-		'data_mask': data_mask
+		'data_mask': data_mask,
+		'data_set': data_set
 		}, ignore_index=True)
 	df.to_csv(score_file, index=False)
 

@@ -22,13 +22,21 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import seaborn as sns
+
 import cv2
 from tqdm import tqdm
 
+from datetime import datetime
+import time
+import configparser
+import json
+import sys
+
 from utils.file import makedirs
 from utils.recorder import record_model_medata, record_model_scores
-from utils.loader import load_training_set, load_test_set
+from utils.loader import *
 from utils.f2thresholdfinder import *
 from utils.imagegen import *
 from utils.models import *
@@ -36,12 +44,6 @@ from utils.custommetrics import *
 from utils.samplesduplicator import duplicate_train_samples
 from utils.training import *
 from utils.predictor import submission_dataframe
-
-from datetime import datetime
-import time
-import configparser
-import json
-import sys
 
 
 # In[2]:
@@ -54,7 +56,7 @@ start_time = datetime.now()
 
 config_file = 'cfg/default.cfg'
 
-# command line e.g. > python aggregate_model.py cfg/3.cfg
+# command line args processing "python aggregate_model.py cfg/3.cfg"
 if len(sys.argv) > 1 and '.cfg' in sys.argv[1]:
     config_file = sys.argv[1]
 
@@ -69,7 +71,7 @@ model_filename = 'aggregate_model_'+ timestr +'.h5'
 model_filepath = data_dir + 'models/' + model_filename
 sample_submission_filepath = data_dir + 'sample_submission_v2.csv'
 number_of_samples = len(df_train.index)
-print('total number of training samples: {}'.format(number_of_samples))
+print('total number of samples: {}'.format(number_of_samples))
 
 # WARNING: keras allow either 1, 3, or 4 channels per pixel. Other numbers not allowed.
 data_mask_label = np.array(['R', 'G', 'B', 'NDVI', 'NDWI', 'NIR'])
@@ -84,10 +86,6 @@ need_norm_stats = False
 
 model_id = settings.get('model', 'model_id')
 print('model: {}'.format(model_id))
-
-# TODO understand the implications of this. this number usually does not include augmented images but:
-# +0.01 F2 score improvement when number_of_samples * 3
-num_samples_per_epoch = number_of_samples
 
 # default to 64
 rescaled_dim = 64
@@ -127,18 +125,18 @@ print(len(labels))
 
 # In[5]:
 
-label_map = {l: i for i, l in enumerate(labels)}
-inv_label_map = {i: l for l, i in label_map.items()}
+#label_map = {l: i for i, l in enumerate(labels)}
+#inv_label_map = {i: l for l, i in label_map.items()}
 
 
-# In[6]:
+# In[30]:
 
 x_train, y_train = load_training_set(df_train, rescaled_dim)
 print(x_train.shape)
 print(y_train.shape)
 
 
-# In[27]:
+# In[31]:
 
 x_train = x_train[:, :, :, data_mask]
 
@@ -146,7 +144,7 @@ x_train = x_train.transpose(0,3,1,2)  # https://github.com/fchollet/keras/issues
 print(x_train.shape)
 
 
-# In[28]:
+# In[32]:
 
 # TODO save the shuffling order to hdf5 so we can recreate the training and validation sets post execution.
 
@@ -159,7 +157,7 @@ x_train, y_train = shuffle(x_train, y_train, random_state=0)
 x_train, x_valid, y_train, y_valid = x_train[:split], x_train[split:], y_train[:split], y_train[split:]
 
 
-# In[29]:
+# In[33]:
 
 print(x_train.shape)
 print(y_train.shape)
@@ -167,9 +165,8 @@ print(x_valid.shape)
 print(y_valid.shape)
 
 
-# In[30]:
+# In[34]:
 
-# WARNING!
 # experimental hack to get more samples for augmentations for a specific low-frequency tag in unbalanced dataset. e.g. habitation
 # selecting the optimal multiplier is sensitive
 
@@ -184,7 +181,31 @@ if augmentation_hack_config:
     print(y_train.shape)
 
 
-# In[14]:
+# In[35]:
+
+# dynamicly set num_samples_per_epoch
+# TODO understand the implications of num_samples_per_epoch.
+# +0.002 to +0.01??? F2 score improvement when number_of_samples * 3
+# num_samples_per_epoch = 1000
+num_samples_per_epoch = x_train.shape[0]
+
+
+# In[36]:
+
+single_taget_model = False
+# warning: experimental. 
+# shuffling won't let you put things back together
+if settings.has_option('data', 'single_target'):
+    single_taget_model = True
+    single_target_label = settings.get('data', 'single_target')
+    single_target_label_index = labels.index(single_target_label)
+    y_train = y_train[:,single_target_label_index]
+    y_valid = y_valid[:,single_target_label_index]
+    
+score_averaging_method = 'binary' if single_taget_model else 'samples'
+
+
+# In[37]:
 
 def get_img_generator():
     if has_augmentation_config:
@@ -198,21 +219,20 @@ image_generator = get_img_generator()
 print('image generator', image_generator)
 
 
-# In[15]:
+# In[38]:
 
 # this is the augmentation configuration we will use for training
-# TODO augment with random rotations for rare classes
 train_datagen = image_generator.getTrainGenenerator()
 
 
-# In[16]:
+# In[39]:
 
 if (need_norm_stats):
     # need to compute internal stats like featurewise std and zca whitening
     train_datagen.fit(x_train)
 
 
-# In[17]:
+# In[40]:
 
 train_generator = train_datagen.flow(
         x_train,
@@ -221,12 +241,12 @@ train_generator = train_datagen.flow(
         shuffle=True) 
 
 
-# In[18]:
+# In[41]:
 
 validation_datagen = image_generator.getValidationGenenerator()
 
 
-# In[19]:
+# In[42]:
 
 # workaround to provide your own stats: 
 # http://stackoverflow.com/questions/41855512/how-does-data-normalization-work-in-keras-during-prediction/43069409#43069409
@@ -235,7 +255,7 @@ if (need_norm_stats):
     validation_datagen.fit(x_valid)
 
 
-# In[20]:
+# In[43]:
 
 validation_generator = validation_datagen.flow(
         x_valid,
@@ -244,12 +264,13 @@ validation_generator = validation_datagen.flow(
         shuffle=False)
 
 
-# In[21]:
+# In[44]:
 
+if single_taget_model:
+    set_model_output_layer_size(1)
+    
 model = get_model(model_id, num_channels, rescaled_dim, rescaled_dim)
 
-# TODO 
-# Use custom loss function to optimize F2 score.
 # https://github.com/fchollet/keras/issues/369
 # https://github.com/fchollet/keras/blob/master/keras/losses.py
 model.compile(loss='binary_crossentropy', # Is this the best loss function?
@@ -257,7 +278,7 @@ model.compile(loss='binary_crossentropy', # Is this the best loss function?
               metrics=['accuracy', 'recall', 'precision'])
 
 
-# In[22]:
+# In[45]:
 
 # BUG when resuming training, the learning rate need to be decreased.
 # let's load an existing trained model and continue training more epoch gives 0.01 improvement in LB score.
@@ -268,7 +289,7 @@ model.compile(loss='binary_crossentropy', # Is this the best loss function?
 #number_epoch = 2
 
 
-# In[23]:
+# In[46]:
 
 # Ran into MemoryError when training DAGG_2 with 4 channels at epoch 50.
 # To try to get reduce memory usage, limit the number of samples and batch_size
@@ -286,7 +307,7 @@ def compute_f2_measure(l_model):
         shuffle=False)
     raw_pred = l_model.predict_generator(val_generator_f2, validation_num_samples)
     thresholded_pred = (np.array(raw_pred) > classifier_threshold).astype(int)
-    l_f2_score = fbeta_score(y_valid_f2, thresholded_pred, beta=2, average='samples')
+    l_f2_score = fbeta_score(y_valid_f2, thresholded_pred, beta=2, average=score_averaging_method)
     return l_f2_score
     
 class F2_Validation(k.callbacks.Callback):
@@ -298,13 +319,13 @@ class F2_Validation(k.callbacks.Callback):
 f2_score_val = F2_Validation()
 
 
-# In[24]:
+# In[47]:
 
 # stop overfitting on training data
 early_stop = EarlyStopping(monitor='val_loss',patience=3, min_delta=0, verbose=0, mode='auto')  # TODO patience and min_delta
 
 
-# In[25]:
+# In[48]:
 
 training_start_time = datetime.now()
 # fits the model on batches with real-time data augmentation:
@@ -321,18 +342,20 @@ time_spent_trianing = datetime.now() - training_start_time
 print('model training complete')
 
 
-# In[ ]:
+# In[49]:
 
 print(model.summary())
 
 
-# In[24]:
+# In[53]:
 
 
 # model = load_model(data_dir + 'models/aggregate_model_20170517-062305.h5')
+print(y_valid.shape)
+print(y_valid.ndim)
 
 
-# In[40]:
+# In[59]:
 
 # use the validation data to compute some stats which tell us how the model is performing on the validation data set.
 val_generator_score_board = validation_datagen.flow(
@@ -342,32 +365,34 @@ val_generator_score_board = validation_datagen.flow(
     shuffle=False)
 p_valid = model.predict_generator(val_generator_score_board, number_validations)
 
-#print(y_valid)
-#print(p_valid)
-
 optimized_thresholds = f2_optimized_thresholds(y_valid, np.array(p_valid))
 
 y_predictions = (np.array(p_valid) > optimized_thresholds).astype(int)
-#print(y_predictions)
 
-# F2 score, which gives twice the weight to recall emphasising recall higher than precision
+precision_s = precision_score(y_valid, y_predictions, average=score_averaging_method)
+print('>>>> Overall precision score over validation set ' , precision_s)
+
+recall_s = recall_score(y_valid, y_predictions, average=score_averaging_method)
+print('>>>> Overall recall score over validation set ' , recall_s)
+
+# F2 score, which gives twice the weight to recall
 # 'samples' is what the evaluation criteria is for the contest
-f2_score = fbeta_score(y_valid, y_predictions, beta=2, average='samples')
-print('>>>> Overall F2 score over validation set using samples averaging ' , f2_score)
+f2_score = fbeta_score(y_valid, y_predictions, beta=2, average=score_averaging_method)
+print('>>>> Overall F2 score over validation set ' , f2_score)
 
 
-# In[26]:
+# In[27]:
 
 threshold_df = pd.DataFrame({'label':labels, 
                              'optimized_threshold':optimized_thresholds})
 print(threshold_df)
 
 
-# In[33]:
+# In[28]:
 
 precision_l, recall_l, f2_score_l = calculate_stats_for_prediction(y_valid, y_predictions)
 
-count_stats_df = pd.DataFrame({
+prediction_stats_df = pd.DataFrame({
     'label': labels, 
     'true_sum': np.sum(y_valid, axis=0),
     'predict_sum': np.sum(y_predictions, axis=0),
@@ -377,13 +402,15 @@ count_stats_df = pd.DataFrame({
 })
 
 # reordering the columns for easier reading
-count_stats_df = count_stats_df[['label', 'f2', 'recall', 'precision', 'true_sum', 'predict_sum']]
-print(count_stats_df)
+prediction_stats_df = prediction_stats_df[['label', 'f2', 'recall', 'precision', 'true_sum', 'predict_sum']]
+print(prediction_stats_df)
 
 
-# In[ ]:
+# In[29]:
 
 filtered_data_mask_label = data_mask_label[data_mask]
+
+data_set_name = os.path.basename(get_training_set_file_path(rescaled_dim))
 
 record_model_scores(model_filename, 
                     model_id, 
@@ -392,10 +419,11 @@ record_model_scores(model_filename,
                     time_spent_trianing, 
                     num_channels,
                     config_file,
-                    np.array_str(filtered_data_mask_label))
+                    np.array_str(filtered_data_mask_label),
+                    data_set_name)
 
 
-# In[23]:
+# In[30]:
 
 figures_dir = 'figures/' + model_id
 makedirs(figures_dir)
@@ -450,6 +478,16 @@ subplot4.set_ylabel('loss')
 subplot4.set_xlabel('epoch')
 subplot4.legend(['train', 'val'], loc='upper left')
 
+# precision and recall for each label
+subplot5 = fig.add_subplot(236)
+colors = cm.rainbow(np.linspace(0, 1, len(prediction_stats_df['label'])))
+subplot5.scatter(prediction_stats_df['precision'], prediction_stats_df['recall'], c=colors)
+subplot5.set_title('precision & recall')
+subplot5.set_xlabel('precision')
+subplot5.set_ylabel('recall')
+for i, txt in enumerate(prediction_stats_df['label']):
+    subplot5.annotate(txt, (prediction_stats_df['precision'][i], prediction_stats_df['recall'][i]))
+
 fig.savefig(figures_dir + '/stats_' + timestr + '.png')
 #plt.show()
 
@@ -476,9 +514,10 @@ testset_datagen = image_generator.getTestGenenerator()
 
 # In[7]:
 
-# populate the test dataset cache
-df_test = pd.read_csv(sample_submission_filepath)
-load_test_set(df_test, rescaled_dim)
+if not is_test_set_in_cache(rescaled_dim):
+    # populate the test dataset cache
+    df_test = pd.read_csv(sample_submission_filepath)
+    load_test_set(df_test, rescaled_dim)
 
 submit_df = submission_dataframe(model,
                                  optimized_thresholds,
@@ -489,20 +528,6 @@ submit_df = submission_dataframe(model,
                                  sample_submission_filepath,
                                  need_norm_stats)
 submit_df.to_csv(data_dir + 'my_submissions/submission_' + timestr + '.csv', index=False)
-
-
-# In[31]:
-
-#from keras.models import load_model
-# model = load_model(data_dir + 'models/aggregate_model_20170507-184232.h5')
-# model = load_model(data_dir + 'models/aggregate_model_20170509-215809.h5')
-# model = load_model(data_dir + 'models/aggregate_model_20170511-001322.h5')
-# model = load_model(data_dir + 'models/aggregate_model_20170511-150149.h5')
-
-
-# In[32]:
-
-
 
 
 # In[33]:

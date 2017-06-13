@@ -3,73 +3,107 @@ import cv2
 import matplotlib.pyplot as plt
 from spectral import get_rgb
 from skimage.measure import structural_similarity as ssim
+from skimage.measure import ransac
+from skimage import io
+from skimage.filters import roberts, sobel, scharr, prewitt
+from skimage.transform import warp
+from skimage.feature import ORB
+from skimage.feature import match_descriptors
+from skimage.transform import ProjectiveTransform, AffineTransform, SimilarityTransform
+from utils.transform import TranslationTransform
+
 from sklearn.preprocessing import MinMaxScaler
 
-def get_affine_matrix(image_tif_bgrn, image_jpg_bgr, verbose=False):
-# Code adpated from http://www.learnopencv.com/image-alignment-ecc-in-opencv-c-python/
-# Parametric Image Alignment using Enhanced Correlation Coefficient Maximization
-	im1= image_jpg_bgr
-	im2= image_tif_bgrn
+class KeypointDetectionException(Exception):
+    pass
 
-	tif_rgb = get_rgb(im2, [2, 1, 0]) # RGB
-	# rescaling to 0-255 range - uint8 for display
-	rescaleIMG = np.reshape(tif_rgb, (-1, 1))
-	scaler = MinMaxScaler(feature_range=(0, 255))
-	rescaleIMG = scaler.fit_transform(rescaleIMG)
-	img_scaled = (np.reshape(rescaleIMG, tif_rgb.shape)).astype(np.uint8)
-
-	# Convert images to grayscale
-	im1_gray = cv2.cvtColor(im1,cv2.COLOR_BGR2GRAY).astype(np.uint8)
-	im2_gray = cv2.cvtColor(img_scaled,cv2.COLOR_RGB2GRAY).astype(np.uint8)
-
-	#plt.imshow(im2_gray, cmap = plt.cm.gray)
+def match_color_curve_tif2jpg(im_tif, im_jpg):
+	# These parameters controls the percentiles used in the match algorithm:
+	percentile_eps = 0.5
+	function_resoution = 32
+	# Lineary distribute the percentiles
+	percentiles = np.linspace(percentile_eps, 100-percentile_eps, function_resoution)
 	
-	warp_mode = cv2.MOTION_TRANSLATION
-	warp_matrix = np.eye(2, 3, dtype=np.float32)
+	# Calculate the percentiles for TIF and JPG, one per channel
+	x_per_channel = [np.percentile(im_tif[...,c].ravel(), percentiles) for c in range(3)]
+	y_per_channel = [np.percentile(im_jpg[...,c].ravel(), percentiles) for c in range(3)]
 
-	# TODO Refine termination criteria
-	number_of_iterations = 5000
-	termination_eps = 1e-10
-	criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations,  termination_eps)
+	# This is the main part: we use np.interp to convert intermadiate values between
+	# percentiles from TIF to JPG
+	convert_channel = lambda im, c: np.interp(im[...,c], x_per_channel[c], y_per_channel[c])
+	
+	# Convert all channels, join and cast to uint8 at range [0, 255]
+	tif2jpg = lambda im: np.dstack([convert_channel(im, c) for c in range(3)]).clip(0,255).astype(np.uint8)
+	
+	# The function could stop here, but we are going to plot a few charts about its results
+	return tif2jpg(im_tif[...,:3])
 
-	# Run the ECC algorithm. The results are stored in warp_matrix.
-	# TODO detect cases when there is no convergence.
-	correlation, warp_matrix = cv2.findTransformECC(
-		im1_gray, 
-		im2_gray, 
-		warp_matrix, 
-		warp_mode, 
-		criteria)
+def is_translational(model):
+	if model is None:
+		return False
+	# scale is expected to be near 1.0 and rotation is expected to be very near 0.0.
+	if -0.1 < model.rotation < 0.1 and 0.90 < model.scale < 1.1:
+		return True
+	else:
+		return False
 
-	#print(warp_matrix)
+def get_matrix(image_tif_bgrn, image_jpg_bgr, verbose=False):
+	"""Get similarity transform matrix
+	ORB Limitation: https://github.com/scikit-image/scikit-image/issues/1472 """
+	im_tif_adjusted = match_color_curve_tif2jpg(image_tif_bgrn, image_jpg_bgr)
+	jpg_gray = cv2.cvtColor(image_jpg_bgr,cv2.COLOR_BGR2GRAY).astype(np.uint8)
+	tif_gray = cv2.cvtColor(im_tif_adjusted,cv2.COLOR_BGR2GRAY).astype(np.uint8)
 
-	tx = warp_matrix[0,2]
-	ty = warp_matrix[1,2]
+	number_of_keypoints = 100
 
-	warp_matrix[0,2] = np.round(tx)
-	warp_matrix[1,2] = np.round(ty)
+	# Initialize ORB
+	# This number of keypoints is large enough for robust results, 
+	# but low enough to run quickly. 
+	orb = ORB(n_keypoints=number_of_keypoints, fast_threshold=0.05)
+	orb2 = ORB(n_keypoints=number_of_keypoints, fast_threshold=0.05)
+	try:
+		# Detect keypoints
+		orb.detect_and_extract(jpg_gray)
+		keypoints_jpg = orb.keypoints
+		descriptors_jpg = orb.descriptors
+		orb2.detect_and_extract(tif_gray)
+		keypoints_tif = orb2.keypoints
+		descriptors_tif = orb2.descriptors
+	except IndexError:
+		raise KeypointDetectionException('ORB Keypoint detection failed')
 
-	tx = warp_matrix[0,2]
-	ty = warp_matrix[1,2]
+	# Match descriptors between images
+	matches = match_descriptors(descriptors_jpg, descriptors_tif, cross_check=True)
 
-	#print(warp_matrix)
+	# Select keypoints from
+	#   * source (image to be registered)
+	#   * target (reference image)
+	src = keypoints_jpg[matches[:, 0]][:, ::-1]
+	dst = keypoints_tif[matches[:, 1]][:, ::-1]
+
+	model_robust, inliers = ransac((src, dst), 
+                                TranslationTransform,
+                                min_samples=4, 
+                                residual_threshold=1, 
+                                max_trials=300)
 	if verbose:
-		print('tx:{} ty:{} corr:{}'.format(tx, ty, np.round(correlation, decimals=2)))
+		print(inliers)
+		print("number of matching keypoints", np.sum(inliers))
 
-	return correlation, warp_matrix
+	if inliers is None or np.sum(inliers) < 3 or model_robust is None:
+		raise ValueError('Possible mismatched JPG and TIF')
+
+	if is_translational(model_robust):
+		# we assume src and dst are not rotated relative to each other
+		# get rid of any rotational noise introduced during normalization/centering in transform estimate function 
+		model_robust.params[0,0] = 1.0
+		model_robust.params[1,1] = 1.0
+		return model_robust
+	else:
+		raise ValueError('Invalid Model')
 
 def align_target_tif_to_jpg(image_tif_bgrn, image_jpg_bgr, target, verbose=False):
 	"""compute translational tranform matrix mapping image_tif to image_jpg and then apply the same matrix transform to target"""
-	correlation, warp_matrix = get_affine_matrix(image_tif_bgrn, image_jpg_bgr)
-
-	sz = image_jpg_bgr.shape
-
-	tif_aligned = cv2.warpAffine(
-		target,
-		warp_matrix,
-		(sz[1],sz[0]),
-		flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP, 
-		borderMode = cv2.BORDER_CONSTANT, 
-		borderValue = 0)
-
-	return tif_aligned
+	warp_matrix = get_matrix(image_tif_bgrn, image_jpg_bgr, verbose)
+	warped_target = warp(target, warp_matrix)
+	return warped_target

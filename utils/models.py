@@ -5,6 +5,15 @@ from keras.layers import Convolution2D, MaxPooling2D, ZeroPadding2D
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import load_model
 
+model_output_layer_size = 17
+
+def get_model_output_layer_size():
+	return model_output_layer_size
+
+def set_model_output_layer_size(size):
+	global model_output_layer_size
+	model_output_layer_size = size
+
 def get_model(model_id, num_channels, rescaled_dim1, rescaled_dim2):
 	model_dict = {
 		'JAGG_1': JAGG_1,
@@ -43,7 +52,7 @@ def JAGG_1(num_channels, rescaled_dim1, rescaled_dim2):
 # http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
 # Keep in mind dropouts overuse will hurt model performance
 	model.add(Dropout(0.5))
-	model.add(Dense(17, activation='sigmoid'))
+	model.add(Dense(model_output_layer_size, activation='sigmoid'))
 
 	return model
 
@@ -71,7 +80,7 @@ def JAGG_1_1(num_channels, rescaled_dim1, rescaled_dim2):
 # http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
 # Keep in mind dropouts overuse will hurt model performance
 	model.add(Dropout(0.5))
-	model.add(Dense(17, activation='sigmoid'))
+	model.add(Dense(model_output_layer_size, activation='sigmoid'))
 
 	return model
 
@@ -102,7 +111,7 @@ def JAGG_2(num_channels, rescaled_dim1, rescaled_dim2):
 # http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
 # Keep in mind dropouts overuse will hurt model performance
 	model.add(Dropout(0.5))
-	model.add(Dense(17, activation='sigmoid'))
+	model.add(Dense(model_output_layer_size, activation='sigmoid'))
 
 	return model
 
@@ -138,7 +147,7 @@ def JAGG_2_D4X(num_channels, rescaled_dim1, rescaled_dim2):
 # http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
 # Keep in mind dropouts overuse will hurt model performance
 	model.add(Dropout(0.5))
-	model.add(Dense(17, activation='sigmoid'))
+	model.add(Dense(model_output_layer_size, activation='sigmoid'))
 
 	return model
 
@@ -172,7 +181,7 @@ def JAGG_2_BN(num_channels, rescaled_dim1, rescaled_dim2):
 # http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
 # Keep in mind dropouts overuse will hurt model performance
 	model.add(Dropout(0.5))
-	model.add(Dense(17, activation='sigmoid'))
+	model.add(Dense(model_output_layer_size, activation='sigmoid'))
 
 	return model
 
@@ -204,7 +213,7 @@ def JAGG_3(num_channels, rescaled_dim1, rescaled_dim2):
 # http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
 # Keep in mind dropouts overuse will hurt model performance
 	model.add(Dropout(0.5))
-	model.add(Dense(17, activation='sigmoid'))
+	model.add(Dense(model_output_layer_size, activation='sigmoid'))
 
 	return model
 
@@ -252,7 +261,7 @@ def JAGG_4(num_channels, rescaled_dim1, rescaled_dim2):
 # http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
 # Keep in mind dropouts overuse will hurt model performance
 	model.add(Dropout(0.5))
-	model.add(Dense(17, activation='sigmoid'))
+	model.add(Dense(model_output_layer_size, activation='sigmoid'))
 
 	return model
 
