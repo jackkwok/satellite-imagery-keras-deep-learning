@@ -42,13 +42,13 @@ def record_model_scores(model_file, model_id, history, f2_score, training_time, 
 		df = pd.DataFrame(data=np.zeros((0,len(columns))), columns=columns)
 
 	# get the scores from the last epoch
-	val_accuracy = history.history['val_acc'][-1]
-	val_precision = history.history['val_precision'][-1]
-	val_recall = history.history['val_recall'][-1]
+	val_accuracy = history['val_acc'][-1]
+	val_precision = history['val_precision'][-1]
+	val_recall = history['val_recall'][-1]
 
-	train_accuracy = history.history['acc'][-1]
-	train_precision = history.history['precision'][-1]
-	train_recall = history.history['recall'][-1]
+	train_accuracy = history['acc'][-1]
+	train_precision = history['precision'][-1]
+	train_recall = history['recall'][-1]
 
 	df = df.append({
 		'model_file': model_file, 

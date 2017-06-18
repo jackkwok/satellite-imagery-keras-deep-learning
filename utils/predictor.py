@@ -9,16 +9,26 @@ from utils.imagegen import *
 from utils.models import *
 from utils.loader import *
 
-def submission_dataframe(model, thresholds, data_mask, testset_datagen, rescale_dim, labels, sample_submission_filepath, need_norm_stats):
-	# batch_size is limited by amount of RAM in computer.
-	batch_size = 1000
+def make_submission(model, thresholds, data_mask, testset_datagen, rescale_dim, labels, sample_submission_filepath, real_submission_filepath, need_norm_stats):
 	df_submission = pd.read_csv(sample_submission_filepath)
 	number_of_samples = df_submission.shape[0]
+	predict_df = prediction_dataframe(model, thresholds, data_mask, testset_datagen, rescale_dim, labels, number_of_samples, need_norm_stats);
+	submit_df = submission_dataframe(df_submission, predict_df)
+	submit_df.to_csv(real_submission_filepath, index=False)
+	print('submission file generated: {}'.format(real_submission_filepath))
+
+def prediction_dataframe(model, thresholds, data_mask, testset_datagen, rescale_dim, labels, number_of_samples, need_norm_stats):
+	# batch_size is limited by amount of RAM in computer.
+	batch_size = 1000
 	test_prediction = predict_in_batches(model, thresholds, data_mask, testset_datagen, number_of_samples, rescale_dim, batch_size, need_norm_stats)
-	result = pd.DataFrame(test_prediction, columns = labels)
+	result_df = pd.DataFrame(test_prediction, columns = labels)
+	return result_df
+
+def submission_dataframe(df_submission, result_dataframe):
+	"""Turn a sample submission dataframe into a real prediction result submission dataframe"""
 	preds = []
-	for i in tqdm(range(result.shape[0]), miniters=1000):
-		a = result.ix[[i]]
+	for i in tqdm(range(result_dataframe.shape[0]), miniters=1000):
+		a = result_dataframe.ix[[i]]
 		a = a.transpose()
 		a = a.loc[a[i] == 1]
 		' '.join(list(a.index))

@@ -23,6 +23,7 @@ def get_model(model_id, num_channels, rescaled_dim1, rescaled_dim2):
 		'JAGG_2_D4X': JAGG_2_D4X,
 		'JAGG_3': JAGG_3,
 		'JAGG_4': JAGG_4,
+		'EKAMI': EKAMI,
 		'VGG_16': VGG_16
 	}
 	return model_dict[model_id](num_channels, rescaled_dim1, rescaled_dim2)
@@ -82,6 +83,51 @@ def JAGG_1_1(num_channels, rescaled_dim1, rescaled_dim2):
 	model.add(Dropout(0.5))
 	model.add(Dense(model_output_layer_size, activation='sigmoid'))
 
+	return model
+
+def EKAMI(num_channels, rescaled_dim1, rescaled_dim2):
+	model = Sequential()
+	model.add(Convolution2D(32, 3, 3, input_shape=(num_channels, rescaled_dim1, rescaled_dim2)))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(32, 3, 3))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Convolution2D(64, 3, 3))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(64, 3, 3))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Convolution2D(128, 3, 3))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(128, 3, 3))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Convolution2D(256, 3, 3))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(256, 3, 3))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Flatten())
+	model.add(Dense(512, activation='relu'))
+	model.add(BatchNormalization())
+	model.add(Dropout(0.5))
+	model.add(Dense(model_output_layer_size, activation='sigmoid'))        
 	return model
 
 # double the capacity of JAGG_1
@@ -189,7 +235,7 @@ def JAGG_2_BN(num_channels, rescaled_dim1, rescaled_dim2):
 def JAGG_3(num_channels, rescaled_dim1, rescaled_dim2):
 	model = Sequential()
 
-	model.add(Convolution2D(32, 3, 3, input_shape=(num_channels, rescaled_dim1, rescaled_dim2)))  
+	model.add(Convolution2D(32, 3, 3, input_shape=(num_channels, rescaled_dim1, rescaled_dim2)))
 	model.add(Activation('relu'))
 	model.add(MaxPooling2D(pool_size=(2, 2)))
 
@@ -267,48 +313,48 @@ def JAGG_4(num_channels, rescaled_dim1, rescaled_dim2):
 
 # Modified from Source: https://gist.github.com/baraldilorenzo/07d7802847aaad0a35d3
 def VGG_16(num_channels, rescaled_dim1, rescaled_dim2):
-    model = Sequential()
-    model.add(ZeroPadding2D((1,1),input_shape=(3,224,224))) # TODO fix dims
-    model.add(Convolution2D(64, 3, 3, activation='relu'))
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(64, 3, 3, activation='relu'))
-    model.add(MaxPooling2D((2,2), strides=(2,2)))
+	model = Sequential()
+	model.add(ZeroPadding2D((1,1),input_shape=(3,224,224))) # TODO fix dims
+	model.add(Convolution2D(64, 3, 3, activation='relu'))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(64, 3, 3, activation='relu'))
+	model.add(MaxPooling2D((2,2), strides=(2,2)))
 
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(128, 3, 3, activation='relu'))
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(128, 3, 3, activation='relu'))
-    model.add(MaxPooling2D((2,2), strides=(2,2)))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(128, 3, 3, activation='relu'))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(128, 3, 3, activation='relu'))
+	model.add(MaxPooling2D((2,2), strides=(2,2)))
 
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(256, 3, 3, activation='relu'))
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(256, 3, 3, activation='relu'))
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(256, 3, 3, activation='relu'))
-    model.add(MaxPooling2D((2,2), strides=(2,2)))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(256, 3, 3, activation='relu'))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(256, 3, 3, activation='relu'))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(256, 3, 3, activation='relu'))
+	model.add(MaxPooling2D((2,2), strides=(2,2)))
 
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
-    model.add(MaxPooling2D((2,2), strides=(2,2)))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(512, 3, 3, activation='relu'))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(512, 3, 3, activation='relu'))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(512, 3, 3, activation='relu'))
+	model.add(MaxPooling2D((2,2), strides=(2,2)))
 
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
-    model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
-    model.add(MaxPooling2D((2,2), strides=(2,2)))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(512, 3, 3, activation='relu'))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(512, 3, 3, activation='relu'))
+	model.add(ZeroPadding2D((1,1)))
+	model.add(Convolution2D(512, 3, 3, activation='relu'))
+	model.add(MaxPooling2D((2,2), strides=(2,2)))
 
-    model.add(Flatten())
-    model.add(Dense(4096, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(4096, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(1000, activation='softmax'))
+	model.add(Flatten())
+	model.add(Dense(4096, activation='relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(4096, activation='relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(1000, activation='softmax'))
 
-    return model
+	return model
