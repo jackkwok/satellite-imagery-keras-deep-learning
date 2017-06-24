@@ -14,8 +14,10 @@ train_file_format_jpg = 'train-jpg/{}.jpg'
 test_file_format_jpg = 'test/test-jpg/{}.jpg'
 train_file_format_tif = 'train-tif-v2/{}.tif'
 test_file_format_tif = 'test/test-tif-v2/{}.tif'
-training_set_file_path_format = cache_dir + 'train_set_dim{}_rgb_ndvi_ndwi_nir_align_v3.h5'
-test_set_file_path_format = cache_dir + 'test_set_dim{}_rgb_ndvi_ndwi_nir_align_v3.h5'
+#training_set_file_path_format = cache_dir + 'train_set_dim{}_rgb_ndvi_ndwi_nir_align_v3.h5'
+#test_set_file_path_format = cache_dir + 'test_set_dim{}_rgb_ndvi_ndwi_nir_align_v3.h5'
+training_set_file_path_format = cache_dir + 'train_set_dim{}_rgb_ndvi_ndwi_nir.h5'
+test_set_file_path_format = cache_dir + 'test_set_dim{}_rgb_ndvi_ndwi_nir.h5'
 
 # Note: we are loading the entire dataset into memory. Image data will not fit into memory without subsampling.
 # We can write our own generator that read data in batches. See detailed discussion:

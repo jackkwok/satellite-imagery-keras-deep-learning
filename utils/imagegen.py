@@ -96,3 +96,4 @@ class GeneralImgGen(object):
     def __repr__(self):
         return 'rotation_range:{} horizontal_flip:{} vertical_flip:{}'.format(self.rotation_range, self.horizontal_flip, self.vertical_flip)
 
+        

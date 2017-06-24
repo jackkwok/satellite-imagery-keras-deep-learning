@@ -23,6 +23,7 @@ def get_model(model_id, num_channels, rescaled_dim1, rescaled_dim2):
 		'JAGG_2_D4X': JAGG_2_D4X,
 		'JAGG_3': JAGG_3,
 		'JAGG_4': JAGG_4,
+		'JAGG_4_2': JAGG_4_2,
 		'EKAMI': EKAMI,
 		'VGG_16': VGG_16
 	}
@@ -83,51 +84,6 @@ def JAGG_1_1(num_channels, rescaled_dim1, rescaled_dim2):
 	model.add(Dropout(0.5))
 	model.add(Dense(model_output_layer_size, activation='sigmoid'))
 
-	return model
-
-def EKAMI(num_channels, rescaled_dim1, rescaled_dim2):
-	model = Sequential()
-	model.add(Convolution2D(32, 3, 3, input_shape=(num_channels, rescaled_dim1, rescaled_dim2)))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Activation('relu'))
-	model.add(Convolution2D(32, 3, 3))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Activation('relu'))
-	model.add(MaxPooling2D(pool_size=(2, 2)))
-	model.add(Dropout(0.25))
-
-	model.add(Convolution2D(64, 3, 3))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Activation('relu'))
-	model.add(Convolution2D(64, 3, 3))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Activation('relu'))
-	model.add(MaxPooling2D(pool_size=(2, 2)))
-	model.add(Dropout(0.25))
-
-	model.add(Convolution2D(128, 3, 3))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Activation('relu'))
-	model.add(Convolution2D(128, 3, 3))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Activation('relu'))
-	model.add(MaxPooling2D(pool_size=(2, 2)))
-	model.add(Dropout(0.25))
-
-	model.add(Convolution2D(256, 3, 3))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Activation('relu'))
-	model.add(Convolution2D(256, 3, 3))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Activation('relu'))
-	model.add(MaxPooling2D(pool_size=(2, 2)))
-	model.add(Dropout(0.25))
-
-	model.add(Flatten())
-	model.add(Dense(512, activation='relu'))
-	model.add(BatchNormalization())
-	model.add(Dropout(0.5))
-	model.add(Dense(model_output_layer_size, activation='sigmoid'))        
 	return model
 
 # double the capacity of JAGG_1
@@ -303,12 +259,82 @@ def JAGG_4(num_channels, rescaled_dim1, rescaled_dim2):
 
 	model.add(Flatten())
 	model.add(Dense(512, activation='relu'))
-# dropout of 0.2 - 0.5 is recommended :
-# http://machinelearningmastery.com/dropout-regularization-deep-learning-models-keras/
-# Keep in mind dropouts overuse will hurt model performance
 	model.add(Dropout(0.5))
 	model.add(Dense(model_output_layer_size, activation='sigmoid'))
 
+	return model
+
+# JAGG_4 without the ZeroPadding2D
+def JAGG_4_2(num_channels, rescaled_dim1, rescaled_dim2):
+	model = Sequential()
+
+	model.add(Convolution2D(64, 3, 3, input_shape=(num_channels, rescaled_dim1, rescaled_dim2)))  
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Convolution2D(128, 3, 3))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(128, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Convolution2D(256, 3, 3))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(256, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.25))
+
+	model.add(Flatten())
+	model.add(Dense(512, activation='relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(model_output_layer_size, activation='sigmoid'))
+
+	return model
+
+def EKAMI(num_channels, rescaled_dim1, rescaled_dim2):
+	model = Sequential()
+	model.add(BatchNormalization(input_shape=(num_channels, rescaled_dim1, rescaled_dim2)))
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.35))
+
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.35))
+
+	model.add(Convolution2D(128, 3, 3))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(128, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.35))
+
+	model.add(Convolution2D(256, 3, 3))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(256, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.35))
+
+	model.add(Flatten())
+	model.add(Dense(512, activation='relu'))
+	model.add(BatchNormalization())
+	model.add(Dropout(0.5))
+	model.add(Dense(model_output_layer_size, activation='sigmoid'))        
 	return model
 
 # Modified from Source: https://gist.github.com/baraldilorenzo/07d7802847aaad0a35d3
