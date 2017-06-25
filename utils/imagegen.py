@@ -28,11 +28,7 @@ class NormalizedByFeature(object):
 class ScaledDown(object):
     def getTrainGenenerator(self):
       	return ImageDataGenerator(
-        	rescale=1./255,
-        	shear_range=0.0,
-        	zoom_range=0.0,
-        	horizontal_flip=True,
-        	vertical_flip=True)
+        	rescale=1./255)
 
     def getValidationGenenerator(self):
     	return ImageDataGenerator(
@@ -43,7 +39,7 @@ class ScaledDown(object):
  			rescale=1./255)
 
     def __repr__(self):
-        return 'h_flip v_flip rescale'
+        return 'rescale'
 
 class FlipRotateScale(object):
     def getTrainGenenerator(self):

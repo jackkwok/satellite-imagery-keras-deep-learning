@@ -3,9 +3,10 @@ import keras as k
 from utils.augmentation import *
 
 class CustomImgGenerator(object):
-	""" Generate images in batches.  Usage: pass to Keras fit_generator. 
+	""" Generate images in batches.  
+	Usage: pass to Keras fit_generator. 
 	Perform image augmentations (e.g. flip horizon) 
-	these generators will loop indefinitely as required by Keras fit_generator """
+	Generators will loop indefinitely as required by Keras fit_generator """
 	def trainGen(self, x_train, y_train, batch_size):
 		i = 0
 		limit = x_train.shape[0]
@@ -35,11 +36,11 @@ class CustomImgGenerator(object):
 			else:
 				i += batch_size
 
-	def testGen(self, x_test, y_test, batch_size):
+	def testGen(self, x_test, batch_size):
 		i = 0
 		limit = x_test.shape[0]
 		while True:
-			yield x_test[i: i + batch_size] / float(255), y_test[i: i + batch_size]
+			yield x_test[i: i + batch_size] / float(255)
 			if i + batch_size > limit:
 				i = 0
 			else:
