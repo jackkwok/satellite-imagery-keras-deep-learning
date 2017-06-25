@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import seaborn as sns
+import numpy as np
 
-def generatePerformanceFigures(file_path, history, f2_history):
-	# summarize history for f2 score
+def trainHistoryPlot(file_path, history, f2_history, prediction_stats_df):
+	"""Generate and save performance plots from history data from model training and validation predictions"""
 	fig = plt.figure(figsize=(15, 10))
 	subplot0 = fig.add_subplot(231)
-	if hasattr(f2_history, 'f2_measures'):
-		subplot0.plot(f2_history.f2_measures)
+	subplot0.plot(f2_history)
 	subplot0.set_title('f2 score')
 	subplot0.set_ylabel('f2 score')
 	subplot0.set_xlabel('epoch')
