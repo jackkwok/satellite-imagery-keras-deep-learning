@@ -24,8 +24,7 @@ def get_model(model_id, num_channels, rescaled_dim1, rescaled_dim2):
 		'JAGG_3': JAGG_3,
 		'JAGG_4': JAGG_4,
 		'JAGG_4_2': JAGG_4_2,
-		'EKAMI': EKAMI,
-		'VGG_16': VGG_16
+		'EKAMI': EKAMI
 	}
 	return model_dict[model_id](num_channels, rescaled_dim1, rescaled_dim2)
 
@@ -301,6 +300,7 @@ def JAGG_4_2(num_channels, rescaled_dim1, rescaled_dim2):
 
 	return model
 
+# seems to perform pretty similary to JAGG_2 while training 2x longer
 def EKAMI(num_channels, rescaled_dim1, rescaled_dim2):
 	model = Sequential()
 	model.add(BatchNormalization(input_shape=(num_channels, rescaled_dim1, rescaled_dim2)))
@@ -337,50 +337,3 @@ def EKAMI(num_channels, rescaled_dim1, rescaled_dim2):
 	model.add(Dense(model_output_layer_size, activation='sigmoid'))        
 	return model
 
-# Modified from Source: https://gist.github.com/baraldilorenzo/07d7802847aaad0a35d3
-def VGG_16(num_channels, rescaled_dim1, rescaled_dim2):
-	model = Sequential()
-	model.add(ZeroPadding2D((1,1),input_shape=(3,224,224))) # TODO fix dims
-	model.add(Convolution2D(64, 3, 3, activation='relu'))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(64, 3, 3, activation='relu'))
-	model.add(MaxPooling2D((2,2), strides=(2,2)))
-
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(128, 3, 3, activation='relu'))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(128, 3, 3, activation='relu'))
-	model.add(MaxPooling2D((2,2), strides=(2,2)))
-
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(256, 3, 3, activation='relu'))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(256, 3, 3, activation='relu'))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(256, 3, 3, activation='relu'))
-	model.add(MaxPooling2D((2,2), strides=(2,2)))
-
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(512, 3, 3, activation='relu'))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(512, 3, 3, activation='relu'))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(512, 3, 3, activation='relu'))
-	model.add(MaxPooling2D((2,2), strides=(2,2)))
-
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(512, 3, 3, activation='relu'))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(512, 3, 3, activation='relu'))
-	model.add(ZeroPadding2D((1,1)))
-	model.add(Convolution2D(512, 3, 3, activation='relu'))
-	model.add(MaxPooling2D((2,2), strides=(2,2)))
-
-	model.add(Flatten())
-	model.add(Dense(4096, activation='relu'))
-	model.add(Dropout(0.5))
-	model.add(Dense(4096, activation='relu'))
-	model.add(Dropout(0.5))
-	model.add(Dense(1000, activation='softmax'))
-
-	return model
