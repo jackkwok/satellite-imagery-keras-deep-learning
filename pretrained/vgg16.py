@@ -99,7 +99,7 @@ def custom_fc_layers(input_shape, num_classes=None):
 	model.add(Dropout(0.5))
 	model.add(Dense(4096, activation='relu'))
 	model.add(Dropout(0.5))
-	model.add(Dense(num_classes, activation='softmax'))
+	model.add(Dense(num_classes, activation='sigmoid'))  # softmax replace with sigmoid for multiclass multlabel classification
 	return model
 
 def vgg16_model_custom_fc_layers(custom_fc_model_path, channel=3, num_classes=None, num_frozen_layers=25, learning_rate=1e-3):
