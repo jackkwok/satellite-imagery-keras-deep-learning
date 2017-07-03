@@ -2,22 +2,33 @@ from keras import applications
 from keras.models import Sequential
 from keras.layers import Dropout, Flatten, Dense
 from keras.models import load_model
-from keras.optimizers import SGD
+from keras.models import Model
+from keras.optimizers import SGD, Adam
 
 def resnet50_custom_top_classifier(input_shape, num_classes=17):
+	"""Warning: there seems to be no way to load weights trained from this model into our modified Resnet50 model."""
 	model = Sequential()
 	model.add(Flatten(input_shape=input_shape))
 	model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
 	return model
 
-def resnet50_model_custom_top_layers(custom_fc_model_path, num_frozen_layers=25):
-	resnet_model = applications.ResNet50(weights='imagenet', include_top=False)
-	top_model = load_model(custom_fc_model_path)
+def resnet50_model_custom_top(num_classes=17, num_frozen_layers=175):
+	# ResNet50 input_shape: optional shape tuple, only to be specified if include_top is False 
+	# (otherwise the input shape has to be  (224, 224, 3) (with channels_last data format) 
+	# or (3, 224, 224) (with channels_first data format). It should have exactly 3 inputs channels, 
+	# and width and height should be no smaller than 197. E.g. (200, 200, 3) would be one valid value.
+	resnet_model = applications.ResNet50(weights='imagenet', input_shape=(3, 224, 224), include_top=False)
 	
-	# BUG: join the Resnet model to the custom top classifer model somehow
-	top_model.input = resnet_model.output # Can't do this
-	model = Model(input=resnet_model.input, output=top_model.output)
+	x = resnet_model.output
+	x = Flatten()(x)
+	predictions = Dense(num_classes, activation='sigmoid')(x)
+	
+	model = Model(input=resnet_model.input, output=predictions)
+	model = freeze_layers(model, num_frozen_layers=num_frozen_layers)
+	return model
 
+def freeze_layers(model, num_frozen_layers=175):
+	"""num_frozen_layers: number of frozen layers total counting from bottom.  0 indexed."""
 	for layer in model.layers[num_frozen_layers:]:
 		if hasattr(layer, 'trainable'):
 			layer.trainable = True
@@ -25,9 +36,13 @@ def resnet50_model_custom_top_layers(custom_fc_model_path, num_frozen_layers=25)
 	for layer in model.layers[:num_frozen_layers]:
 		if hasattr(layer, 'trainable'):
 			layer.trainable = False
-
-	# TODO try Adam because someone has success with Adam
-	sgd = SGD(lr=learning_rate, momentum=0.9, nesterov=True)
+	
+	# use Adam for top classify layer training because we know it works well
+	if (num_frozen_layers == 175):
+		optimizer = Adam(lr=0.001)
+	else:
+		# TODO try Adam because someone has success with Adam
+		optimizer = SGD(lr=0.001, nesterov=True)
 	# compile the model (should be done *after* setting layers to non-trainable)
-	model.compile(optimizer=sgd, loss='binary_crossentropy', metrics=['accuracy', 'recall', 'precision'])
+	model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy', 'recall', 'precision'])
 	return model

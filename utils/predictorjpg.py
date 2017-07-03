@@ -14,7 +14,7 @@ from utils.generator import *
 
 def make_submission(model, thresholds, rescale_dim, labels, sample_submission_filepath, real_submission_filepath):
 	df_submission = pd.read_csv(sample_submission_filepath)
-	test_set = load_test_set(df, rescale_dim)
+	test_set = load_test_set(df_submission, rescale_dim)
 	number_of_samples = df_submission.shape[0]
 	predict_df = prediction_dataframe(model, thresholds, labels, test_set);
 	submit_df = submission_dataframe(df_submission, predict_df)
@@ -22,8 +22,8 @@ def make_submission(model, thresholds, rescale_dim, labels, sample_submission_fi
 	print('submission file generated: {}'.format(real_submission_filepath))
 
 def prediction_dataframe(model, thresholds, labels, test_set):
-	# batch_size is limited by amount of RAM in computer.
-	batch_size = 1000
+	# batch_size is limited by amount of RAM in computer.  Set smaller batch size for bigger models like ResNet50.
+	batch_size = 64
 	test_prediction = predict_all(test_set, model, thresholds, batch_size)
 	result_df = pd.DataFrame(test_prediction, columns = labels)
 	return result_df
@@ -40,13 +40,12 @@ def submission_dataframe(df_submission, result_dataframe):
 	df_submission['tags'] = preds
 	return df_submission
 
-def predict_all(test_subset, model, thresholds, batch_size):
-	test_subset = test_subset.transpose(0,3,1,2)  # https://github.com/fchollet/keras/issues/2681
+def predict_all(test_set, model, thresholds, batch_size):
+	"""Predict in batches to address limited GPU memory"""
 	#print(test_subset.shape)
 
-	gen = CustomImgGenerator()
-	testset_generator = gen.testGen(test_subset, batch_size)
-
-	testset_predict = model.predict_generator(testset_generator, test_subset.shape[0]) # number of test samples
+	gen = BottleNeckImgGenerator()
+	testset_generator = gen.testGen(test_set, batch_size)
+	testset_predict = model.predict_generator(testset_generator, test_set.shape[0]) # number of test samples
 	y_testset_predictions = (np.array(testset_predict) > thresholds).astype(int)
 	return y_testset_predictions

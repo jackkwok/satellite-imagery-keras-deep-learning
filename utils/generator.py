@@ -115,7 +115,7 @@ class BottleNeckImgGenerator(object):
 				end = i + batch_size
 
 			# int8 to float16, subtract mean, transpose
-			x_result = x_test[i: i + batch_size].astype(np.float16)
+			x_result = x_test[i: end].astype(np.float16)
 			subtract_mean(x_result)
 			x_result = x_result.transpose(0,3,1,2) # theano expects channels come before dims
 

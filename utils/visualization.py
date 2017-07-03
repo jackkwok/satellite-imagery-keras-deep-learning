@@ -50,7 +50,7 @@ def trainHistoryPlot(file_path, history, f2_history, prediction_stats_df):
 	subplot4.legend(['train', 'val'], loc='upper left')
 
 	# precision and recall for each label
-	if (prediction_stats_df):
+	if prediction_stats_df is not None:
 		subplot5 = fig.add_subplot(236)
 		colors = cm.rainbow(np.linspace(0, 1, len(prediction_stats_df['label'])))
 		subplot5.scatter(prediction_stats_df['precision'], prediction_stats_df['recall'], c=colors)
