@@ -36,6 +36,16 @@ def load_training_set(df_train, rescaled_dim):
 			hf.create_dataset("training-y", data=train_y_local)
 	return train_x_local, train_y_local
 
+def load_training_set_y_from_cache(df_train, rescaled_dim):
+	"""Attempts to load y data from cache."""
+	training_file_path = training_set_file_path_format.format(rescaled_dim)
+	if os.path.exists(training_file_path):
+		with h5py.File(training_file_path, 'r') as hf:
+			train_y_local = hf['training-y'][:]
+	else:
+		raise ValueError('data not in cache')
+	return train_y_local
+
 def load_training_set_from_source(df_train, rescaled_dim):
 	"""Load and return train X and train Y. Each train X sample has 6 channels (uint8): R, G, B, NDVI, NDWI, NIR in that order.  
 	Order of returned samples matches ordering of samples in df_train"""
