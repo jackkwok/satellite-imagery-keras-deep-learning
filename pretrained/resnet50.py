@@ -12,8 +12,7 @@ def resnet50_custom_top_classifier(input_shape, num_classes=17):
 	model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
 	return model
 
-# TODO: update resnet50_model_custom_top to use this top classifier
-# [Best] val_loss: 0.0988
+# val_loss: 0.0988
 # experimental hypothesis: add a new dense layer should improve val_loss 
 def resnet50_custom_top_classifier_experimental(input_shape, num_classes=17):
 	"""Warning: there seems to be no way to load weights trained from this model into our modified Resnet50 model."""
@@ -51,7 +50,40 @@ def resnet50_custom_top_classifier_experimental_4(input_shape, num_classes=17):
 	model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
 	return model
 
+# DONE: update resnet50_model_custom_top to use the Best top classifier
+# 
+# dense: 256 dropout: 0.50 val_loss: 0.0978
+# dense: 256 dropout: 0.75 val_loss: 0.0984
+# dense: 128 dropout: 0.50 val_loss: 0.0988
+# dense: 128 dropout: 0.25 val_loss: 0.0975
+# dense: 256 dropout: 0.25 val_loss: 0.0982
+# dense: 512 dropout: 0.25 val_loss: 0.0977
+# dense: 512 dropout: 0.50 val_loss: 0.0970 [Best] 
+def resnet50_custom_top_classifier_experimental_5(input_shape, num_classes=17):
+	"""Warning: there seems to be no way to load weights trained from this model into our modified Resnet50 model."""
+	model = Sequential()
+	model.add(Flatten(input_shape=input_shape))  #2048
+	model.add(Dense(512, activation='relu'))
+	model.add(Dropout(0.50))
+	model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
+	return model
+
+# 512, 0.5, 512, 0.5 val_loss: 0.0978
+# 1024, 0.5, 512, 0.5 val_loss: 0.0999
+# 512, 0.5, 256, 0.5 val_loss: 0.0982
+def resnet50_custom_top_classifier_experimental_6(input_shape, num_classes=17):
+	"""Warning: there seems to be no way to load weights trained from this model into our modified Resnet50 model."""
+	model = Sequential()
+	model.add(Flatten(input_shape=input_shape))
+	model.add(Dense(512, activation='relu'))
+	model.add(Dropout(0.50))
+	model.add(Dense(256, activation='relu'))
+	model.add(Dropout(0.50))
+	model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
+	return model
+
 def resnet50_model_custom_top(num_classes=17, num_frozen_layers=175):
+	# [7/5/17] Custom top updated to the optimal top model found in previous bottleneck experiments.
 	# ResNet50 input_shape: optional shape tuple, only to be specified if include_top is False 
 	# (otherwise the input shape has to be  (224, 224, 3) (with channels_last data format) 
 	# or (3, 224, 224) (with channels_first data format). It should have exactly 3 inputs channels, 
@@ -60,6 +92,8 @@ def resnet50_model_custom_top(num_classes=17, num_frozen_layers=175):
 	
 	x = resnet_model.output
 	x = Flatten()(x)
+	x = Dense(512, activation='relu')(x)
+	x = Dropout(0.50)(x)
 	predictions = Dense(num_classes, activation='sigmoid')(x)
 	
 	model = Model(input=resnet_model.input, output=predictions)

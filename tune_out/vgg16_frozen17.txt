@@ -1,0 +1,106 @@
+reading configurations from config file: cfg/tune_vgg16_1.cfg
+model: vgg16
+source model file: D:/Downloads/amazon/bottleneck/vgg16/frozen19_20170704-132538.h5
+number of frozen layers: 17
+[2e-05, 4e-06]
+[100, 10]
+batch size: 64
+(40479L, 224L, 224L, 3L)
+(40479L, 17L)
+(0, u'input_1', False)
+(1, u'block1_conv1', False)
+(2, u'block1_conv2', False)
+(3, u'block1_pool', False)
+(4, u'block2_conv1', False)
+(5, u'block2_conv2', False)
+(6, u'block2_pool', False)
+(7, u'block3_conv1', False)
+(8, u'block3_conv2', False)
+(9, u'block3_conv3', False)
+(10, u'block3_pool', False)
+(11, u'block4_conv1', False)
+(12, u'block4_conv2', False)
+(13, u'block4_conv3', False)
+(14, u'block4_pool', False)
+(15, u'block5_conv1', False)
+(16, u'block5_conv2', False)
+(17, u'block5_conv3', True)
+(18, u'block5_pool', True)
+(19, u'flatten_1', True)
+(20, u'dense_1', True)
+(21, u'dropout_1', True)
+(22, u'dense_2', True)
+(23, u'dropout_2', True)
+(24, u'dense_3', True)
+learning rate :2e-05
+Epoch 00000: val_loss improved from inf to 0.10641, saving model to D:/Downloads/amazon/bottleneck/vgg16/frozen17_20170704-145556.h5
+Epoch 00001: val_loss improved from 0.10641 to 0.10412, saving model to D:/Downloads/amazon/bottleneck/vgg16/frozen17_20170704-145556.h5
+Epoch 00002: val_loss improved from 0.10412 to 0.10318, saving model to D:/Downloads/amazon/bottleneck/vgg16/frozen17_20170704-145556.h5
+Epoch 00003: val_loss improved from 0.10318 to 0.10293, saving model to D:/Downloads/amazon/bottleneck/vgg16/frozen17_20170704-145556.h5
+Epoch 00004: val_loss improved from 0.10293 to 0.10181, saving model to D:/Downloads/amazon/bottleneck/vgg16/frozen17_20170704-145556.h5
+Epoch 00005: val_loss did not improve
+Epoch 00006: val_loss did not improve
+learning rate :4e-06
+Epoch 00000: val_loss improved from 0.10181 to 0.10167, saving model to D:/Downloads/amazon/bottleneck/vgg16/frozen17_20170704-145556.h5
+Epoch 00001: val_loss improved from 0.10167 to 0.10126, saving model to D:/Downloads/amazon/bottleneck/vgg16/frozen17_20170704-145556.h5
+Epoch 00002: val_loss did not improve
+Epoch 00003: val_loss did not improve
+vgg16 model training complete. Time taken: 1:26:48.752000
+loading model: D:/Downloads/amazon/bottleneck/vgg16/frozen17_20170704-145556.h5
+label:0 threshold:0.25 score:0.891734015802
+label:1 threshold:0.12 score:0.895197062262
+label:2 threshold:0.5 score:0.895197062262
+label:3 threshold:0.1 score:0.897735617556
+label:4 threshold:0.11 score:0.900377698864
+label:5 threshold:0.32 score:0.900481036923
+label:6 threshold:0.22 score:0.903951157572
+label:7 threshold:0.24 score:0.904340962445
+label:8 threshold:0.33 score:0.905797205896
+label:9 threshold:0.19 score:0.907810294219
+label:10 threshold:0.3 score:0.907902906762
+label:11 threshold:0.22 score:0.90966732234
+label:12 threshold:0.2 score:0.91006925662
+label:13 threshold:0.14 score:0.910262652793
+label:14 threshold:0.13 score:0.91539083942
+label:15 threshold:0.16 score:0.918379666441
+label:16 threshold:0.51 score:0.918385367262
+('>>>> Overall precision score over validation set ', 0.85617598735805256)
+('>>>> Overall recall score over validation set ', 0.94904214897421424)
+('>>>> Overall F2 score over validation set ', 0.91838536726177422)
+                label  optimized_threshold
+0          slash_burn                 0.25
+1               clear                 0.12
+2            blooming                 0.50
+3             primary                 0.10
+4              cloudy                 0.11
+5   conventional_mine                 0.32
+6               water                 0.22
+7                haze                 0.24
+8         cultivation                 0.33
+9       partly_cloudy                 0.19
+10     artisinal_mine                 0.30
+11         habitation                 0.22
+12        bare_ground                 0.20
+13          blow_down                 0.14
+14        agriculture                 0.13
+15               road                 0.16
+16  selective_logging                 0.51
+                label    f2  recall  precision  true_sum  predict_sum
+0          slash_burn  0.14    0.13       0.23        24           13
+1               clear  0.97    0.99       0.91      2873         3125
+2            blooming  0.13    0.11       0.38        27            8
+3             primary  0.99    1.00       0.96      3759         3884
+4              cloudy  0.87    0.96       0.62       199          310
+5   conventional_mine  0.53    0.57       0.40         7           10
+6               water  0.81    0.85       0.70       716          868
+7                haze  0.76    0.84       0.55       262          405
+8         cultivation  0.58    0.60       0.50       451          537
+9       partly_cloudy  0.90    0.93       0.83       714          797
+10     artisinal_mine  0.77    0.77       0.75        35           36
+11         habitation  0.71    0.78       0.52       346          517
+12        bare_ground  0.39    0.40       0.33       102          123
+13          blow_down  0.40    0.38       0.50        13           10
+14        agriculture  0.89    0.95       0.70      1251         1696
+15               road  0.85    0.91       0.67       789         1068
+16  selective_logging  0.16    0.14       0.36        28           11
+submission file generated: D:/Downloads/amazon/my_submissions/submission_vgg16_20170704-145556.csv

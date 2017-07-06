@@ -7,17 +7,24 @@ from keras.layers.convolutional import Convolution2D
 from keras.layers.pooling import AveragePooling2D, GlobalAveragePooling2D, MaxPooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.models import Model
+from keras.models import Sequential
 import keras.backend as K
 
 from sklearn.metrics import log_loss
 
-from custom_layers.scale_layer import Scale
+from pretrained.scale_layer import Scale
 
-from load_cifar10 import load_cifar10_data
+imagenet_densenet169_th_weights_file = 'D:/Downloads/amazon/imagenet_models/densenet169_weights_th.h5'
 
-imagenet_vgg_weights_file = 'D:/Downloads/amazon/imagenet_models/densenet169_weights_th.h5'
+def densenet169_custom_top_classifier(input_shape, num_classes=17):   
+    """Warning: there seems to be no way to load weights trained from this model into our modified Resnet50 model."""
+    model = Sequential()
+    model.add(GlobalAveragePooling2D(input_shape=input_shape))
+    model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
+    return model
 
-def densenet169_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.5, dropout_rate=0.0, weight_decay=1e-4, num_classes=None):
+def densenet169_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth_rate=32, 
+	nb_filter=64, reduction=0.5, dropout_rate=0.0, weight_decay=1e-4, num_classes=17):
 	'''
 	DenseNet 169 Model for Keras
 
@@ -89,15 +96,15 @@ def densenet169_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth
 
 	model = Model(img_input, x_fc, name='densenet')
 
-	# if K.image_dim_ordering() == 'th':
-	#   # Use pre-trained weights for Theano backend
-	#   weights_path = 'imagenet_models/densenet169_weights_th.h5'
-	# else:
-	#   # Use pre-trained weights for Tensorflow backend
-	#   weights_path = 'imagenet_models/densenet169_weights_tf.h5'
+	if K.image_dim_ordering() == 'th':
+	  # Use pre-trained weights for Theano backend
+	  weights_path = imagenet_densenet169_th_weights_file
+	else:
+	  # Use pre-trained weights for Tensorflow backend
+	  weights_path = 'imagenet_models/densenet169_weights_tf.h5'
 
 
-	model.load_weights(imagenet_vgg_weights_file, by_name=True)
+	model.load_weights(weights_path, by_name=True)
 
 	# Truncate and replace softmax layer for transfer learning
 	# Cannot use model.layers.pop() since model is not of Sequential() type
@@ -207,33 +214,3 @@ def dense_block(x, stage, nb_layers, nb_filter, growth_rate, dropout_rate=None, 
 
 	return concat_feat, nb_filter
 
-if __name__ == '__main__':
-
-	# Example to fine-tune on 3000 samples from Cifar10
-
-	img_rows, img_cols = 224, 224 # Resolution of inputs
-	channel = 3
-	num_classes = 10 
-	batch_size = 16 
-	nb_epoch = 10
-
-	# Load Cifar10 data. Please implement your own load_data() module for your own dataset
-	X_train, Y_train, X_valid, Y_valid = load_cifar10_data(img_rows, img_cols)
-
-	# Load our model
-	model = densenet169_model(img_rows=img_rows, img_cols=img_cols, color_type=channel, num_classes=num_classes)
-
-	# Start Fine-tuning
-	model.fit(X_train, Y_train,
-			  batch_size=batch_size,
-			  nb_epoch=nb_epoch,
-			  shuffle=True,
-			  verbose=1,
-			  validation_data=(X_valid, Y_valid),
-			  )
-
-	# Make predictions
-	predictions_valid = model.predict(X_valid, batch_size=batch_size, verbose=1)
-
-	# Cross-entropy loss score
-	score = log_loss(Y_valid, predictions_valid)

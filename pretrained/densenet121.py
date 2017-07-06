@@ -1,29 +1,32 @@
-from keras.models import Model
-from keras.layers import Input, merge, ZeroPadding2D
+# -*- coding: utf-8 -*-
+
+from keras.optimizers import SGD
+from keras.layers import Input, merge, ZeroPadding2D, Dropout, Flatten, Dense
 from keras.layers.core import Dense, Dropout, Activation
 from keras.layers.convolutional import Convolution2D
 from keras.layers.pooling import AveragePooling2D, GlobalAveragePooling2D, MaxPooling2D
 from keras.layers.normalization import BatchNormalization
+from keras.models import Model
+from keras.models import Sequential
 import keras.backend as K
 
-from custom_layers import Scale
+from sklearn.metrics import log_loss
 
-imagenet_vgg_weights_file = 'D:/Downloads/amazon/imagenet_models/densenet121_weights_th.h5'
+from pretrained.scale_layer import Scale
 
-def DenseNet(nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.0, dropout_rate=0.0, weight_decay=1e-4, classes=1000):
-    '''Instantiate the DenseNet 121 architecture,
-        # Arguments
-            nb_dense_block: number of dense blocks to add to end
-            growth_rate: number of filters to add per dense block
-            nb_filter: initial number of filters
-            reduction: reduction factor of transition blocks.
-            dropout_rate: dropout rate
-            weight_decay: weight decay factor
-            classes: optional number of classes to classify images
-            weights_path: path to pre-trained weights
-        # Returns
-            A Keras model instance.
-    '''
+imagenet_densenet121_th_weights_file = 'D:/Downloads/amazon/imagenet_models/densenet121_weights_th.h5'
+
+def densenet121_custom_top_classifier(input_shape, num_classes=17):   
+    """Warning: there seems to be no way to load weights trained from this model into our modified Resnet50 model."""
+    model = Sequential()
+    model.add(GlobalAveragePooling2D(input_shape=input_shape))
+    model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
+    return model
+
+def densenet121_fc_truncated(img_rows, img_cols, color_type=3, nb_dense_block=4, 
+    growth_rate=32, nb_filter=64, reduction=0.5, dropout_rate=0.0, weight_decay=1e-4, 
+    num_classes=17):
+    """copy /paste from densenet121_model """
     eps = 1.1e-5
 
     # compute compression factor
@@ -33,10 +36,10 @@ def DenseNet(nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.0, drop
     global concat_axis
     if K.image_dim_ordering() == 'tf':
       concat_axis = 3
-      img_input = Input(shape=(224, 224, 3), name='data')
+      img_input = Input(shape=(img_rows, img_cols, color_type), name='data')
     else:
       concat_axis = 1
-      img_input = Input(shape=(3, 224, 224), name='data')
+      img_input = Input(shape=(color_type, img_rows, img_cols), name='data')
 
     # From architecture for ImageNet (Table 1 in the paper)
     nb_filter = 64
@@ -66,14 +69,127 @@ def DenseNet(nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.0, drop
     x = BatchNormalization(epsilon=eps, axis=concat_axis, name='conv'+str(final_stage)+'_blk_bn')(x)
     x = Scale(axis=concat_axis, name='conv'+str(final_stage)+'_blk_scale')(x)
     x = Activation('relu', name='relu'+str(final_stage)+'_blk')(x)
-    x = GlobalAveragePooling2D(name='pool'+str(final_stage))(x)
 
-    x = Dense(classes, name='fc6')(x)
-    x = Activation('softmax', name='prob')(x)
+    x_fc = GlobalAveragePooling2D(name='pool'+str(final_stage))(x)
+    x_fc = Dense(1000, name='fc6')(x_fc)
+    x_fc = Activation('softmax', name='prob')(x_fc)
 
-    model = Model(img_input, x, name='densenet')
+    model = Model(img_input, x_fc, name='densenet')
 
-    model.load_weights(imagenet_vgg_weights_file)
+    if K.image_dim_ordering() == 'th':
+      # Use pre-trained weights for Theano backend
+      #weights_path = 'imagenet_models/densenet121_weights_th.h5'
+      weights_path = imagenet_densenet121_th_weights_file
+    else:
+      # Use pre-trained weights for Tensorflow backend
+      weights_path = 'imagenet_models/densenet121_weights_tf.h5'
+
+    model.load_weights(weights_path, by_name=True)
+
+    model = Model(img_input, x)
+
+    # Learning rate is changed to 0.001
+    sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
+
+    return model
+
+def densenet121_model(img_rows, img_cols, color_type=3, nb_dense_block=4, 
+    growth_rate=32, nb_filter=64, reduction=0.5, dropout_rate=0.0, weight_decay=1e-4, 
+    num_classes=17):
+    '''
+    DenseNet 121 Model for Keras
+
+    Model Schema is based on 
+    https://github.com/flyyufelix/DenseNet-Keras
+
+    ImageNet Pretrained Weights 
+    Theano: https://drive.google.com/open?id=0Byy2AcGyEVxfMlRYb3YzV210VzQ
+    TensorFlow: https://drive.google.com/open?id=0Byy2AcGyEVxfSTA4SHJVOHNuTXc
+
+    # Arguments
+        nb_dense_block: number of dense blocks to add to end
+        growth_rate: number of filters to add per dense block
+        nb_filter: initial number of filters
+        reduction: reduction factor of transition blocks.
+        dropout_rate: dropout rate
+        weight_decay: weight decay factor
+        classes: optional number of classes to classify images
+        weights_path: path to pre-trained weights
+    # Returns
+        A Keras model instance.
+    '''
+    eps = 1.1e-5
+
+    # compute compression factor
+    compression = 1.0 - reduction
+
+    # Handle Dimension Ordering for different backends
+    global concat_axis
+    if K.image_dim_ordering() == 'tf':
+      concat_axis = 3
+      img_input = Input(shape=(img_rows, img_cols, color_type), name='data')
+    else:
+      concat_axis = 1
+      img_input = Input(shape=(color_type, img_rows, img_cols), name='data')
+
+    # From architecture for ImageNet (Table 1 in the paper)
+    nb_filter = 64
+    nb_layers = [6,12,24,16] # For DenseNet-121
+
+    # Initial convolution
+    x = ZeroPadding2D((3, 3), name='conv1_zeropadding')(img_input)
+    x = Convolution2D(nb_filter, 7, 7, subsample=(2, 2), name='conv1', bias=False)(x)
+    x = BatchNormalization(epsilon=eps, axis=concat_axis, name='conv1_bn')(x)
+    x = Scale(axis=concat_axis, name='conv1_scale')(x)
+    x = Activation('relu', name='relu1')(x)
+    x = ZeroPadding2D((1, 1), name='pool1_zeropadding')(x)
+    x = MaxPooling2D((3, 3), strides=(2, 2), name='pool1')(x)
+
+    # Add dense blocks
+    for block_idx in range(nb_dense_block - 1):
+        stage = block_idx+2
+        x, nb_filter = dense_block(x, stage, nb_layers[block_idx], nb_filter, growth_rate, dropout_rate=dropout_rate, weight_decay=weight_decay)
+
+        # Add transition_block
+        x = transition_block(x, stage, nb_filter, compression=compression, dropout_rate=dropout_rate, weight_decay=weight_decay)
+        nb_filter = int(nb_filter * compression)
+
+    final_stage = stage + 1
+    x, nb_filter = dense_block(x, final_stage, nb_layers[-1], nb_filter, growth_rate, dropout_rate=dropout_rate, weight_decay=weight_decay)
+
+    x = BatchNormalization(epsilon=eps, axis=concat_axis, name='conv'+str(final_stage)+'_blk_bn')(x)
+    x = Scale(axis=concat_axis, name='conv'+str(final_stage)+'_blk_scale')(x)
+    x = Activation('relu', name='relu'+str(final_stage)+'_blk')(x)
+
+    x_fc = GlobalAveragePooling2D(name='pool'+str(final_stage))(x)
+    x_fc = Dense(1000, name='fc6')(x_fc)
+    x_fc = Activation('softmax', name='prob')(x_fc)
+
+    model = Model(img_input, x_fc, name='densenet')
+
+    if K.image_dim_ordering() == 'th':
+      # Use pre-trained weights for Theano backend
+      #weights_path = 'imagenet_models/densenet121_weights_th.h5'
+      weights_path = imagenet_densenet121_th_weights_file
+    else:
+      # Use pre-trained weights for Tensorflow backend
+      weights_path = 'imagenet_models/densenet121_weights_tf.h5'
+
+    model.load_weights(weights_path, by_name=True)
+
+    # Truncate and replace softmax layer for transfer learning
+    # Cannot use model.layers.pop() since model is not of Sequential() type
+    # The method below works since pre-trained weights are stored in layers but not in the model
+    x_newfc = GlobalAveragePooling2D(name='pool'+str(final_stage))(x)
+    x_newfc = Dense(num_classes, name='fc6')(x_newfc)
+    x_newfc = Activation('softmax', name='prob')(x_newfc)
+
+    model = Model(img_input, x_newfc)
+
+    # Learning rate is changed to 0.001
+    sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
 
     return model
 

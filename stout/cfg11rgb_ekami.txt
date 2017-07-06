@@ -1,0 +1,16 @@
+reading configurations from config file: cfg/11_rgb_ekami.cfg
+total number of samples: 40479
+[ True  True  True False False False]
+model: EKAMI
+rescaled dimension: 64
+batch size: 16
+['slash_burn', 'clear', 'blooming', 'primary', 'cloudy', 'conventional_mine', 'water', 'haze', 'cultivation', 'partly_cloudy', 'artisinal_mine', 'habitation', 'bare_ground', 'blow_down', 'agriculture', 'road', 'selective_logging']
+17
+(40479L, 64L, 64L, 6L)
+(40479L, 17L)
+(40479L, 3L, 64L, 64L)
+(32383L, 3L, 64L, 64L)
+(32383L, 17L)
+(8096L, 3L, 64L, 64L)
+(8096L, 17L)
+('image generator', h_flip v_flip rescale)

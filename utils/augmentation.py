@@ -20,6 +20,7 @@ def apply_augment_sequence(images):
 	seq = iaa.Sequential(
 		[
 			iaa.Fliplr(0.5),
+			iaa.Flipud(0.5)
 			#iaa.Crop(percent=(0, 0.05)), # crop images from each side # no improvement
 		],
 		random_order=True)

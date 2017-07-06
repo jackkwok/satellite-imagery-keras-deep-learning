@@ -1,0 +1,20 @@
+reading configurations from config file: cfg/26.cfg
+total number of samples: 40479
+[ True  True  True False False False]
+model: JAGG_2
+learning rates: [0.001, 0.00025, 6.25e-05, 1.5625e-05]
+with max epoch: [100, 100, 100, 100]
+rescaled dimension: 224
+batch size: 256
+['slash_burn', 'clear', 'blooming', 'primary', 'cloudy', 'conventional_mine', 'water', 'haze', 'cultivation', 'partly_cloudy', 'artisinal_mine', 'habitation', 'bare_ground', 'blow_down', 'agriculture', 'road', 'selective_logging']
+17
+(40479L, 224L, 224L, 3L)
+(40479L, 17L)
+(40479L, 3L, 224L, 224L)
+(36431L, 3L, 224L, 224L)
+(36431L, 17L)
+(4048L, 3L, 224L, 224L)
+(4048L, 17L)
+('score_averaging_method', 'samples')
+learning rate :0.001
+Epoch 1/100
