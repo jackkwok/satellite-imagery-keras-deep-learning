@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from keras.optimizers import SGD
 from keras.layers import Input, merge, ZeroPadding2D, Dropout, Flatten, Dense
 from keras.layers.core import Dense, Dropout, Activation
 from keras.layers.convolutional import Convolution2D
@@ -9,17 +8,26 @@ from keras.layers.normalization import BatchNormalization
 from keras.models import Model
 from keras.models import Sequential
 import keras.backend as K
+from keras.optimizers import SGD, Adam
 
 from sklearn.metrics import log_loss
 
 from pretrained.scale_layer import Scale
 
+# ImageNet Pretrained Weights 
+# Theano: https://drive.google.com/open?id=0Byy2AcGyEVxfMlRYb3YzV210VzQ
+# TensorFlow: https://drive.google.com/open?id=0Byy2AcGyEVxfSTA4SHJVOHNuTXc
 imagenet_densenet121_th_weights_file = 'D:/Downloads/amazon/imagenet_models/densenet121_weights_th.h5'
 
+# Dense 512 Dropout 0.25 val_loss: 0.0996
+# Dense 1024 Dropout 0.25 val_loss: 0.1001
+# Dense 256 Dropout 0.25 val_loss: 0.0999
 def densenet121_custom_top_classifier(input_shape, num_classes=17):   
     """Warning: there seems to be no way to load weights trained from this model into our modified Resnet50 model."""
     model = Sequential()
     model.add(GlobalAveragePooling2D(input_shape=input_shape))
+    model.add(Dense(512, activation='relu'))
+    model.add(Dropout(0.25))
     model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
     return model
 
@@ -90,13 +98,19 @@ def densenet121_fc_truncated(img_rows, img_cols, color_type=3, nb_dense_block=4,
 
     # Learning rate is changed to 0.001
     sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=sgd, loss='binary_crossentropy', metrics=['accuracy', 'recall', 'precision'])
 
     return model
 
-def densenet121_model(img_rows, img_cols, color_type=3, nb_dense_block=4, 
-    growth_rate=32, nb_filter=64, reduction=0.5, dropout_rate=0.0, weight_decay=1e-4, 
-    num_classes=17):
+def densenet121_model_custom_top(img_rows=224, img_cols=224, color_type=3, 
+    nb_dense_block=4, 
+    growth_rate=32, 
+    nb_filter=64, 
+    reduction=0.5, 
+    dropout_rate=0.0, 
+    weight_decay=1e-4, 
+    num_classes=17, 
+    num_frozen_layers=607):
     '''
     DenseNet 121 Model for Keras
 
@@ -164,7 +178,7 @@ def densenet121_model(img_rows, img_cols, color_type=3, nb_dense_block=4,
 
     x_fc = GlobalAveragePooling2D(name='pool'+str(final_stage))(x)
     x_fc = Dense(1000, name='fc6')(x_fc)
-    x_fc = Activation('softmax', name='prob')(x_fc)
+    x_fc = Activation('sigmoid', name='prob')(x_fc)
 
     model = Model(img_input, x_fc, name='densenet')
 
@@ -182,17 +196,14 @@ def densenet121_model(img_rows, img_cols, color_type=3, nb_dense_block=4,
     # Cannot use model.layers.pop() since model is not of Sequential() type
     # The method below works since pre-trained weights are stored in layers but not in the model
     x_newfc = GlobalAveragePooling2D(name='pool'+str(final_stage))(x)
+    x_newfc = Dense(512, activation='relu')(x_newfc)
+    x_newfc = Dropout(0.25)(x_newfc)
     x_newfc = Dense(num_classes, name='fc6')(x_newfc)
-    x_newfc = Activation('softmax', name='prob')(x_newfc)
+    x_newfc = Activation('sigmoid', name='prob')(x_newfc)
 
     model = Model(img_input, x_newfc)
-
-    # Learning rate is changed to 0.001
-    sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
-
+    model = freeze_layers(model, num_frozen_layers=num_frozen_layers)
     return model
-
 
 def conv_block(x, stage, branch, nb_filter, dropout_rate=None, weight_decay=1e-4):
     '''Apply BatchNorm, Relu, bottleneck 1x1 Conv2D, 3x3 Conv2D, and option dropout
@@ -286,3 +297,21 @@ def dense_block(x, stage, nb_layers, nb_filter, growth_rate, dropout_rate=None, 
 
     return concat_feat, nb_filter
 
+def freeze_layers(model, num_frozen_layers=175):
+    """num_frozen_layers: number of frozen layers total counting from bottom.  0 indexed."""
+    for layer in model.layers[num_frozen_layers:]:
+        if hasattr(layer, 'trainable'):
+            layer.trainable = True
+
+    for layer in model.layers[:num_frozen_layers]:
+        if hasattr(layer, 'trainable'):
+            layer.trainable = False
+    
+    # use Adam for top classify layer training because we know it works well
+    if (num_frozen_layers >= 607):
+        optimizer = Adam(lr=0.001)
+    else:
+        optimizer = SGD(nesterov=True)
+    # compile the model (should be done *after* setting layers to non-trainable)
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy', 'recall', 'precision'])
+    return model
