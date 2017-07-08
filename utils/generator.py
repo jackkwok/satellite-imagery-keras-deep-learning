@@ -13,7 +13,7 @@ def subtract_mean(im):
 class BottleNeckImgGenerator(object):
 	""" Generate images in batches.  
 	Perform image augmentations (e.g. flip horizon) 
-	Perform int8 to float16, subtract mean, transpose
+	Perform type conversion from int8 to float32, subtract mean, transpose
 	Generators will loop indefinitely as required by Keras fit_generator """
 	
 	def bottleNeckGen(self, x_train, batch_size):
@@ -35,7 +35,7 @@ class BottleNeckImgGenerator(object):
 				end = i + batch_size
 
 			# int8 to float16, subtract mean, transpose
-			x_result = x_train[i: i + batch_size].astype(np.float16)
+			x_result = x_train[i: i + batch_size].astype(np.float32)
 			subtract_mean(x_result)
 			x_result = x_result.transpose(0,3,1,2) # theano expects channels come before dims
 
@@ -62,7 +62,7 @@ class BottleNeckImgGenerator(object):
 				end = i + batch_size
 
 			# int8 to float16, subtract mean, transpose
-			x_result = x_train[i: i + batch_size].astype(np.float16)
+			x_result = x_train[i: i + batch_size].astype(np.float32)
 			x_result = apply_augment_sequence(x_result)
 			subtract_mean(x_result)
 			x_result = x_result.transpose(0,3,1,2) # theano expects channels come before dims
@@ -89,7 +89,7 @@ class BottleNeckImgGenerator(object):
 				end = i + batch_size
 
 			# int8 to float16, subtract mean, transpose
-			x_result = x_valid[i: i + batch_size].astype(np.float16)
+			x_result = x_valid[i: i + batch_size].astype(np.float32)
 			subtract_mean(x_result)
 			x_result = x_result.transpose(0,3,1,2) # theano expects channels come before dims
 
