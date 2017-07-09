@@ -308,10 +308,10 @@ def freeze_layers(model, num_frozen_layers=175):
             layer.trainable = False
     
     # use Adam for top classify layer training because we know it works well
-    if (num_frozen_layers >= 607):
-        optimizer = Adam(lr=0.001)
-    else:
-        optimizer = SGD(nesterov=True)
+    #if (num_frozen_layers >= 607):
+    optimizer = Adam(lr=0.001)
+    #else:
+    #    optimizer = SGD(nesterov=True)
     # compile the model (should be done *after* setting layers to non-trainable)
     model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy', 'recall', 'precision'])
     return model

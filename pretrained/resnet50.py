@@ -1,6 +1,7 @@
 from keras import applications
 from keras.models import Sequential
 from keras.layers import Dropout, Flatten, Dense
+from keras.layers.pooling import AveragePooling2D, GlobalAveragePooling2D, MaxPooling2D
 from keras.models import load_model
 from keras.models import Model
 from keras.optimizers import SGD, Adam
@@ -58,26 +59,45 @@ def resnet50_custom_top_classifier_experimental_4(input_shape, num_classes=17):
 # dense: 128 dropout: 0.25 val_loss: 0.0975
 # dense: 256 dropout: 0.25 val_loss: 0.0982
 # dense: 512 dropout: 0.25 val_loss: 0.0977
+# dense: 512 dropout: 0.30 val_loss: 0.0980
+# dense: 512 dropout: 0.40 val_loss: 0.0970 [Best] 
 # dense: 512 dropout: 0.50 val_loss: 0.0970 [Best] 
+# dense: 1024 dropout: 0.50 val_loss: 0.0980
+# dense: 1024 dropout: 0.25 val_loss: 0.0988
 def resnet50_custom_top_classifier_experimental_5(input_shape, num_classes=17):
 	"""Warning: there seems to be no way to load weights trained from this model into our modified Resnet50 model."""
 	model = Sequential()
 	model.add(Flatten(input_shape=input_shape))  #2048
 	model.add(Dense(512, activation='relu'))
-	model.add(Dropout(0.50))
+	model.add(Dropout(0.4))
 	model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
 	return model
 
 # 512, 0.5, 512, 0.5 val_loss: 0.0978
 # 1024, 0.5, 512, 0.5 val_loss: 0.0999
 # 512, 0.5, 256, 0.5 val_loss: 0.0982
+# 512, 0.25, 512, 0.25 val_loss: 0.0992
+# 1024, 0.25, 512, 0.25 val_loss: 0.0991
 def resnet50_custom_top_classifier_experimental_6(input_shape, num_classes=17):
 	"""Warning: there seems to be no way to load weights trained from this model into our modified Resnet50 model."""
 	model = Sequential()
 	model.add(Flatten(input_shape=input_shape))
 	model.add(Dense(512, activation='relu'))
+	model.add(Dropout(0.25))
+	model.add(Dense(512, activation='relu'))
+	model.add(Dropout(0.25))
+	model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
+	return model
+
+# val_loss: 0.0984
+def resnet50_custom_top_classifier_experimental_7(input_shape, num_classes=17):
+	"""Warning: there seems to be no way to load weights trained from this model into our modified Resnet50 model."""
+	model = Sequential()
+	#model.add(Flatten(input_shape=input_shape))
+	model.add(GlobalAveragePooling2D(input_shape=input_shape))
+	model.add(Dense(512, activation='relu'))
 	model.add(Dropout(0.50))
-	model.add(Dense(256, activation='relu'))
+	model.add(Dense(512, activation='relu'))
 	model.add(Dropout(0.50))
 	model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
 	return model

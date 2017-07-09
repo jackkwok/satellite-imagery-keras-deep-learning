@@ -3,6 +3,15 @@ import numpy as np
 
 from utils.augmentation import *
 
+def image_normalization_func(model_id):
+	normalization_dict = {
+		'vgg16': subtract_mean,
+		'resnet50': subtract_mean,
+		'densenet121': densenet_normalization,
+		'inceptionv3': inceptionv3_normalization
+	}
+	return normalization_dict[model_id]
+
 # Reference: https://gist.github.com/baraldilorenzo/07d7802847aaad0a35d3
 # BGR mean values [103.94, 116.78, 123.68] should be subtracted before feeding into VGG and ResNet models
 def subtract_mean(im):
@@ -10,19 +19,37 @@ def subtract_mean(im):
 	im[:,:,:,1] -= 116.779
 	im[:,:,:,2] -= 123.68
 
+def densenet_normalization(im):
+	# Subtract mean pixel and multiple by scaling constant 
+	# DenseNet Reference: https://github.com/shicai/DenseNet-Caffe
+	im[:,:,:,0] = (im[:,:,:,0] - 103.939) * 0.017
+	im[:,:,:,1] = (im[:,:,:,1] - 116.779) * 0.017
+	im[:,:,:,2] = (im[:,:,:,2] - 123.68) * 0.017
+
+# code from : https://github.com/fchollet/deep-learning-models/blob/master/inception_v3.py
+def inceptionv3_normalization(im):
+	im /= 255.
+	im -= 0.5
+	im *= 2.
+
 class BottleNeckImgGenerator(object):
 	""" Generate images in batches.  
 	Perform image augmentations (e.g. flip horizon) 
 	Perform type conversion from int8 to float32, subtract mean, transpose
 	Generators will loop indefinitely as required by Keras fit_generator """
 	
+	def __init__(self, normalization=subtract_mean):
+		"""Certain pretrained models (e.g. DenseNet and VGG) require model specific image normalizations to be applied.
+		e.g. https://github.com/shicai/DenseNet-Caffe"""
+		self.normalization = normalization
+
 	def bottleNeckGen(self, x_train, batch_size):
 		"""
 		BUG with using H5PYMatrix: x_train can be a H5PYMatrix which doesn't support wrap index like numpy arrays
-  		File "<ipython-input-18-e0327f6f3a82>", line 18, in bottleNeckGen
-    	x_result = x_train[i: i + batch_size]
-  		File "C:\Users\Me\Anaconda2\lib\site-packages\keras\keras\utils\io_utils.py", line 74, in __getitem__
-    	raise IndexError
+		File "<ipython-input-18-e0327f6f3a82>", line 18, in bottleNeckGen
+		x_result = x_train[i: i + batch_size]
+		File "C:\Users\Me\Anaconda2\lib\site-packages\keras\keras\utils\io_utils.py", line 74, in __getitem__
+		raise IndexError
 		"""
 		i = 0
 		limit = x_train.shape[0]
@@ -36,7 +63,7 @@ class BottleNeckImgGenerator(object):
 
 			# int8 to float16, subtract mean, transpose
 			x_result = x_train[i: i + batch_size].astype(np.float32)
-			subtract_mean(x_result)
+			self.normalization(x_result)
 			x_result = x_result.transpose(0,3,1,2) # theano expects channels come before dims
 
 			i += batch_size
@@ -46,10 +73,10 @@ class BottleNeckImgGenerator(object):
 	def trainGen(self, x_train, y_train, batch_size):
 		"""
 		BUG with using H5PYMatrix: x_train can be a H5PYMatrix which doesn't support wrap index like numpy arrays
-  		File "<ipython-input-18-e0327f6f3a82>", line 18, in bottleNeckGen
-    	x_result = x_train[i: i + batch_size]
-  		File "C:\Users\Me\Anaconda2\lib\site-packages\keras\keras\utils\io_utils.py", line 74, in __getitem__
-    	raise IndexError
+		File "<ipython-input-18-e0327f6f3a82>", line 18, in bottleNeckGen
+		x_result = x_train[i: i + batch_size]
+		File "C:\Users\Me\Anaconda2\lib\site-packages\keras\keras\utils\io_utils.py", line 74, in __getitem__
+		raise IndexError
 		"""
 		i = 0
 		limit = x_train.shape[0]
@@ -64,7 +91,7 @@ class BottleNeckImgGenerator(object):
 			# int8 to float16, subtract mean, transpose
 			x_result = x_train[i: i + batch_size].astype(np.float32)
 			x_result = apply_augment_sequence(x_result)
-			subtract_mean(x_result)
+			self.normalization(x_result)
 			x_result = x_result.transpose(0,3,1,2) # theano expects channels come before dims
 
 			yield x_result, y_train[i: i + batch_size]
@@ -73,10 +100,10 @@ class BottleNeckImgGenerator(object):
 	def validationGen(self, x_valid, y_valid, batch_size):
 		"""
 		BUG with using H5PYMatrix: x_valid can be a H5PYMatrix which doesn't support wrap index like numpy arrays
-  		File "<ipython-input-18-e0327f6f3a82>", line 18, in bottleNeckGen
-    	x_result = x_valid[i: i + batch_size]
-  		File "C:\Users\Me\Anaconda2\lib\site-packages\keras\keras\utils\io_utils.py", line 74, in __getitem__
-    	raise IndexError
+		File "<ipython-input-18-e0327f6f3a82>", line 18, in bottleNeckGen
+		x_result = x_valid[i: i + batch_size]
+		File "C:\Users\Me\Anaconda2\lib\site-packages\keras\keras\utils\io_utils.py", line 74, in __getitem__
+		raise IndexError
 		"""
 		i = 0
 		limit = x_valid.shape[0]
@@ -90,7 +117,7 @@ class BottleNeckImgGenerator(object):
 
 			# int8 to float16, subtract mean, transpose
 			x_result = x_valid[i: i + batch_size].astype(np.float32)
-			subtract_mean(x_result)
+			self.normalization(x_result)
 			x_result = x_result.transpose(0,3,1,2) # theano expects channels come before dims
 
 			yield x_result, y_valid[i: i + batch_size]
@@ -99,10 +126,10 @@ class BottleNeckImgGenerator(object):
 	def testGen(self, x_test, batch_size):
 		"""
 		BUG with using H5PYMatrix: x_test can be a H5PYMatrix which doesn't support wrap index like numpy arrays
-  		File "<ipython-input-18-e0327f6f3a82>", line 18, in bottleNeckGen
-    	x_result = x_test[i: i + batch_size]
-  		File "C:\Users\Me\Anaconda2\lib\site-packages\keras\keras\utils\io_utils.py", line 74, in __getitem__
-    	raise IndexError
+		File "<ipython-input-18-e0327f6f3a82>", line 18, in bottleNeckGen
+		x_result = x_test[i: i + batch_size]
+		File "C:\Users\Me\Anaconda2\lib\site-packages\keras\keras\utils\io_utils.py", line 74, in __getitem__
+		raise IndexError
 		"""
 		i = 0
 		limit = x_test.shape[0]
@@ -115,8 +142,8 @@ class BottleNeckImgGenerator(object):
 				end = i + batch_size
 
 			# int8 to float16, subtract mean, transpose
-			x_result = x_test[i: end].astype(np.float16)
-			subtract_mean(x_result)
+			x_result = x_test[i: end].astype(np.float32)
+			self.normalization(x_result)
 			x_result = x_result.transpose(0,3,1,2) # theano expects channels come before dims
 
 			yield x_result
