@@ -10,9 +10,14 @@ ensemble_output_dir = submission_dir + 'ensemble/'
 
 submission_files = [
 	# WARNING!!!: ONLY USE FILES generated AFTER 6/25/2017 at 7pm (post Kaggle test data patch).
-	'submission_good_test_data_score_090909.csv',
+	'submission_densenet121_20170716-214237_score_092702.csv',
+	'submission_vgg16_20170706-011852_score_092523.csv',
+	#'submission_resnet50_20170703-213500_resnet_score_0913.csv',
+	'submission_20170626-025551_score_091200.csv'
 ]
 
+# Note: Binary Voting is the easiest way to do an ensemble but not always the optimal method.
+# Alternatively, average the floating point numbers from 2 predictions before doing thresholding.
 def generate_ensemble_submission(ensemble_submission_filename):
 	""" generate a submission file based on majority vote amongst the submission files. 
 	Ensembling gives at least a +0.002 improvement in leaderboard score. """

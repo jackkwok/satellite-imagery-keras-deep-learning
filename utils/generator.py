@@ -6,6 +6,7 @@ from utils.augmentation import *
 def image_normalization_func(model_id):
 	normalization_dict = {
 		'vgg16': subtract_mean,
+		'vgg19': subtract_mean,
 		'resnet50': subtract_mean,
 		'densenet121': densenet_normalization,
 		'inceptionv3': inceptionv3_normalization

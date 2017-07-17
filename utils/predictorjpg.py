@@ -12,19 +12,23 @@ from utils.generator import *
 
 # 3 channels only
 
-def make_submission(model, thresholds, rescale_dim, labels, sample_submission_filepath, real_submission_filepath):
+def make_submission(model, thresholds, rescale_dim, labels, sample_submission_filepath, real_submission_filepath, generator):
 	df_submission = pd.read_csv(sample_submission_filepath)
 	test_set = load_test_set(df_submission, rescale_dim)
 	number_of_samples = df_submission.shape[0]
-	predict_df = prediction_dataframe(model, thresholds, labels, test_set);
+	probability_prediction_filepath = real_submission_filepath + '.h5'
+	predict_df = prediction_dataframe(model, thresholds, labels, test_set, generator, probability_prediction_filepath);
 	submit_df = submission_dataframe(df_submission, predict_df)
 	submit_df.to_csv(real_submission_filepath, index=False)
 	print('submission file generated: {}'.format(real_submission_filepath))
 
-def prediction_dataframe(model, thresholds, labels, test_set):
+def prediction_dataframe(model, thresholds, labels, test_set, generator, probability_prediction_filepath):
 	# batch_size is limited by amount of RAM in computer.  Set smaller batch size for bigger models like ResNet50.
 	batch_size = 64
-	test_prediction = predict_all(test_set, model, thresholds, batch_size)
+	probability_prediction = predict_probabilities(test_set, model, batch_size, generator)
+	# backup the probabilities for easy result ensembling
+	np.save(probability_prediction_filepath, probability_prediction)
+	test_prediction = predict_binary(probability_prediction, thresholds)
 	result_df = pd.DataFrame(test_prediction, columns = labels)
 	return result_df
 
@@ -40,12 +44,16 @@ def submission_dataframe(df_submission, result_dataframe):
 	df_submission['tags'] = preds
 	return df_submission
 
-def predict_all(test_set, model, thresholds, batch_size):
+def predict_binary(probability_predict, thresholds):
 	"""Predict in batches to address limited GPU memory"""
 	#print(test_subset.shape)
-
-	gen = BottleNeckImgGenerator()
-	testset_generator = gen.testGen(test_set, batch_size)
-	testset_predict = model.predict_generator(testset_generator, test_set.shape[0]) # number of test samples
-	y_testset_predictions = (np.array(testset_predict) > thresholds).astype(int)
+	
+	y_testset_predictions = (np.array(probability_predict) > thresholds).astype(int)
 	return y_testset_predictions
+
+def predict_probabilities(test_set, model, batch_size, generator):
+	"""Predict in batches to address limited GPU memory"""
+	#print(test_subset.shape)
+	testset_generator = generator.testGen(test_set, batch_size)
+	testset_predict = model.predict_generator(testset_generator, test_set.shape[0]) # number of test samples
+	return testset_predict

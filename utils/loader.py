@@ -18,6 +18,11 @@ test_file_format_tif = 'test/test-tif-v2/{}.tif'
 #test_set_file_path_format = cache_dir + 'test_set_dim{}_rgb_ndvi_ndwi_nir_align_v3.h5'
 training_set_file_path_format = cache_dir + 'train_set_dim{}_rgb_ndvi_ndwi_nir.h5'
 test_set_file_path_format = cache_dir + 'test_set_dim{}_rgb_ndvi_ndwi_nir.h5'
+#training_set_file_path_format = cache_dir + 'train_set_dim{}_rgb.h5'
+#test_set_file_path_format = cache_dir + 'test_set_dim{}_rgb.h5'
+
+
+run_align_algo = False
 
 # Note: we are loading the entire dataset into memory. Image data will not fit into memory without subsampling.
 # We can write our own generator that read data in batches. See detailed discussion:
@@ -75,26 +80,30 @@ def _combine_derived_channels(jpg_img_orig, bgrn_img_orig, jpg_img, bgrn_img, f)
 	ndwi = normalized_index(compute_ndwi(bgrn_img))
 	ndwi = np.expand_dims(ndwi, axis=2)
 
+	# Probable BUG: NIR should be normalized to 0-255. Raw NIR values goes above 8000.
 	nir = bgrn_img[:, :, 3]
 	nir = np.expand_dims(nir, axis=2)
 
 	# combine the TIFF derived values before realignment in one pass
 	tiff_derived = np.concatenate((ndvi, ndwi, nir), axis=2)
 
-	# realignment to address TIFF-JPG misalignment in training and test data sets
-	try:
-		tiff_derived_aligned = align_target_tif_to_jpg(bgrn_img_orig, jpg_img_orig, tiff_derived, verbose=False)
-		# combine the RGB values from jpg, NDVI, NDWI, and NIR value into one array
-		combined_img = np.concatenate((jpg_img, tiff_derived_aligned), axis=2)
-	except ValueError, e:
-		# Assumption: better to fill with all zeros than using wrong TIFF data
-		tiff_derived.fill(0)
+	if run_align_algo:
+		# realignment to address TIFF-JPG misalignment in training and test data sets
+		try:
+			tiff_derived_aligned = align_target_tif_to_jpg(bgrn_img_orig, jpg_img_orig, tiff_derived, verbose=False)
+			# combine the RGB values from jpg, NDVI, NDWI, and NIR value into one array
+			combined_img = np.concatenate((jpg_img, tiff_derived_aligned), axis=2)
+		except ValueError, e:
+			# Assumption: better to fill with all zeros than using wrong TIFF data
+			tiff_derived.fill(0)
+			combined_img = np.concatenate((jpg_img, tiff_derived), axis=2)
+			print(str(e), f)
+		except KeypointDetectionException, e:
+			tiff_derived.fill(0)
+			combined_img = np.concatenate((jpg_img, tiff_derived), axis=2)
+			print(str(e), f)
+	else:
 		combined_img = np.concatenate((jpg_img, tiff_derived), axis=2)
-		print(str(e), f)
-	except KeypointDetectionException, e:
-		tiff_derived.fill(0)
-		combined_img = np.concatenate((jpg_img, tiff_derived), axis=2)
-		print(str(e), f)
 	
 	return combined_img
 

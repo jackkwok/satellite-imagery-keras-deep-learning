@@ -22,11 +22,15 @@ imagenet_densenet121_th_weights_file = 'D:/Downloads/amazon/imagenet_models/dens
 # Dense 512 Dropout 0.25 val_loss: 0.0996
 # Dense 1024 Dropout 0.25 val_loss: 0.1001
 # Dense 256 Dropout 0.25 val_loss: 0.0999
-def densenet121_custom_top_classifier(input_shape, num_classes=17):   
-    """Warning: there seems to be no way to load weights trained from this model into our modified Resnet50 model."""
+# Dense 1024 Dropout 0.25 Dense 1024 Dropout 0.25 val_loss: 0.1011 
+# Dense 1024 Dropout 0.25 Dense 512 Dropout 0.25 val_loss:0.1002
+# Dense 512 Dropout 0.25 Dense 512 Dropout 0.25 val_loss:0.0997
+def densenet121_custom_top_classifier(input_shape, num_classes=17):
     model = Sequential()
     model.add(GlobalAveragePooling2D(input_shape=input_shape))
-    model.add(Dense(512, activation='relu'))
+    model.add(Dense(256, activation='relu'))
+    model.add(Dropout(0.25))
+    model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.25))
     model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
     return model
