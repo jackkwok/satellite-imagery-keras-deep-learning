@@ -25,3 +25,21 @@ def apply_augment_sequence(images):
 		],
 		random_order=True)
 	return seq.augment_images(images)
+
+# Test Time Augmentation (TTA)
+def apply_tta_fliplr(images):
+	seq = iaa.Fliplr(1.0)
+	return seq.augment_images(images)
+
+def apply_tta_flipud(images):
+	seq = iaa.Flipud(1.0)
+	return seq.augment_images(images)
+
+def apply_tta_flipboth(images):
+	seq = iaa.Sequential(
+		[
+			iaa.Fliplr(1.0),
+			iaa.Flipud(1.0)
+		],
+		random_order=False)
+	return seq.augment_images(images)

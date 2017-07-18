@@ -11,16 +11,24 @@ ensemble_output_dir = submission_dir + 'ensemble/'
 submission_files = [
 	# WARNING!!!: ONLY USE FILES generated AFTER 6/25/2017 at 7pm (post Kaggle test data patch).
 	'submission_densenet121_20170716-214237_score_092702.csv',
+	'submission_resnet50_20170717-092206_score_092742.csv',
 	'submission_vgg16_20170706-011852_score_092523.csv',
-	#'submission_resnet50_20170703-213500_resnet_score_0913.csv',
 	'submission_20170626-025551_score_091200.csv'
 ]
 
-# Note: Binary Voting is the easiest way to do an ensemble but not always the optimal method.
+# better models should be given higher weights. weights must add up to 1.0
+weights = [
+	0.3,
+	0.3,
+	0.2,
+	0.2
+]
+
 # Alternatively, average the floating point numbers from 2 predictions before doing thresholding.
 def generate_ensemble_submission(ensemble_submission_filename):
 	""" generate a submission file based on majority vote amongst the submission files. 
-	Ensembling gives at least a +0.002 improvement in leaderboard score. """
+	Each submission is weighted according to its performance / confidence.
+	"""
 	class_names = ['slash_burn', 'clear', 'blooming', 'primary', 'cloudy', 
 		'conventional_mine', 'water', 'haze', 'cultivation', 'partly_cloudy', 
 		'artisinal_mine', 'habitation', 'bare_ground', 'blow_down', 
@@ -39,9 +47,10 @@ def generate_ensemble_submission(ensemble_submission_filename):
 			predictions = np.zeros((N, num_classes), dtype=np.float32)
 
 		l = df.iloc[:,2:].values.astype(np.float32)
-		predictions = predictions+l
+		predictions = predictions + (l * weights[n])
+	
 	# average over all submission files
-	predictions = predictions/num
+	#predictions = predictions/num
 
 	binary_predictions = (np.array(predictions) >= 0.5).astype(int)
 	predict_df = pd.DataFrame(binary_predictions, columns = class_names)

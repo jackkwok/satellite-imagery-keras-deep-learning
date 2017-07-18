@@ -124,13 +124,9 @@ class BottleNeckImgGenerator(object):
 			yield x_result, y_valid[i: i + batch_size]
 			i += batch_size
 
-	def testGen(self, x_test, batch_size):
+	def testGen(self, x_test, batch_size, tta_func=None):
 		"""
-		BUG with using H5PYMatrix: x_test can be a H5PYMatrix which doesn't support wrap index like numpy arrays
-		File "<ipython-input-18-e0327f6f3a82>", line 18, in bottleNeckGen
-		x_result = x_test[i: i + batch_size]
-		File "C:\Users\Me\Anaconda2\lib\site-packages\keras\keras\utils\io_utils.py", line 74, in __getitem__
-		raise IndexError
+			tta_func: Test Time Augmentation function. Default: None
 		"""
 		i = 0
 		limit = x_test.shape[0]
@@ -144,6 +140,8 @@ class BottleNeckImgGenerator(object):
 
 			# int8 to float16, subtract mean, transpose
 			x_result = x_test[i: end].astype(np.float32)
+			if tta_func is not None:
+				x_result = tta_func(x_result)
 			self.normalization(x_result)
 			x_result = x_result.transpose(0,3,1,2) # theano expects channels come before dims
 
