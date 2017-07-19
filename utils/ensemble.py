@@ -3,21 +3,23 @@ import numpy.ma as ma
 import pandas as pd
 import os
 
+from sklearn.metrics import fbeta_score
+
 from utils.predictor import submission_dataframe
+from utils.f2thresholdfinder import *
 
 submission_dir = 'D:/Downloads/amazon/my_submissions/'
 ensemble_output_dir = submission_dir + 'ensemble/'
 
-submission_files = [
-	# WARNING!!!: ONLY USE FILES generated AFTER 6/25/2017 at 7pm (post Kaggle test data patch).
-	'submission_densenet121_20170716-214237_score_092702.csv',
-	'submission_resnet50_20170717-092206_score_092742.csv',
-	'submission_vgg16_20170706-011852_score_092523.csv',
-	'submission_20170626-025551_score_091200.csv'
+default_equal_weights = [
+	0.333,
+	0.333,
+	0.333,
+	#0.2
 ]
 
 # better models should be given higher weights. weights must add up to 1.0
-weights = [
+weights_combo_1 = [
 	0.3,
 	0.3,
 	0.2,
@@ -25,10 +27,12 @@ weights = [
 ]
 
 # Alternatively, average the floating point numbers from 2 predictions before doing thresholding.
-def generate_ensemble_submission(ensemble_submission_filename):
-	""" generate a submission file based on majority vote amongst the submission files. 
-	Each submission is weighted according to its performance / confidence.
+def generate_ensemble_submission(ensemble_submission_filename, submission_files, weights):
+	""" 
+		Generate a submission file based on majority vote amongst the submission files. 
+		Each submission is weighted according to its performance / confidence.
 	"""
+	print('ensembling kaggle submission files: {}'.format(submission_files))
 	class_names = ['slash_burn', 'clear', 'blooming', 'primary', 'cloudy', 
 		'conventional_mine', 'water', 'haze', 'cultivation', 'partly_cloudy', 
 		'artisinal_mine', 'habitation', 'bare_ground', 'blow_down', 
@@ -48,9 +52,6 @@ def generate_ensemble_submission(ensemble_submission_filename):
 
 		l = df.iloc[:,2:].values.astype(np.float32)
 		predictions = predictions + (l * weights[n])
-	
-	# average over all submission files
-	#predictions = predictions/num
 
 	binary_predictions = (np.array(predictions) >= 0.5).astype(int)
 	predict_df = pd.DataFrame(binary_predictions, columns = class_names)
@@ -60,3 +61,43 @@ def generate_ensemble_submission(ensemble_submission_filename):
 	ensemble_submission_filepath = ensemble_output_dir + ensemble_submission_filename
 	submit_df.to_csv(ensemble_submission_filepath, index=False)
 	print('submission file generated: {}'.format(ensemble_submission_filepath))
+
+def eval_optimal_ensemble_weights(weights_combos, y_predictions, y_valid, optimizer_func):
+	""" 
+		Use the validation dataset to figure out the optimal weight distribution.
+		
+		weights_combos: an array of an array of weights.  Each item represents a single weights combination to test and MUST add up to 1.
+		y_predictions: binary predictions
+		y_valid: truth binary labels
+	
+	"""
+	# if weights_combos.shape[1] != len(models):
+	# 	raise ValueError('length of weights different from number of models!')
+
+	score = 0
+	result = None
+
+	# y_predictions = []
+	# for model, generator in zip(models, generators):
+	# 	y_predict, thresholds = predict_with_optimal_thresholds(x_valid, y_valid, generator, model)
+	# 	y_predictions.append(y_predict)
+
+	for weight_combo in weights_combos:
+		curr_score = optimizer_func(weight_combo, y_valid, y_predictions)
+		# assumes higher score value is better than lower score
+		if curr_score > score:
+			score = curr_score
+			result = weight_combo
+	return result
+
+def weighted_ensemble_f2_score_optimizer(weights_combo, y_valid, y_predictions):
+	"""
+		An optimizer_func implementation that evaluate F2 scores as the metrics to optimize.
+	"""
+	y_predict_aggregate = np.zeros((y_valid.shape[0], y_valid.shape[1]), dtype=np.float32)
+	for weight, y_predict in zip(weights_combo, y_predictions):
+		y_predict_aggregate = y_predict_aggregate + (y_predict.astype(np.float32) * weight)
+	binary_predictions = (np.array(y_predict_aggregate) >= 0.5).astype(int)
+	f2_score = fbeta_score(y_valid, binary_predictions, beta=2, average='samples')
+	print('> F2 score : {} for weights: {}'.format(f2_score, weights_combo))
+	return f2_score
