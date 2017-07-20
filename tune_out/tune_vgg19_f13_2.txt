@@ -1,0 +1,213 @@
+reading configurations from config file: cfg/tune_vgg19_f13_2.cfg
+model: vgg19
+number of frozen layers: 13
+[5e-05, 5e-06]
+[30, 5]
+batch size: 16
+(40479L, 224L, 224L, 3L)
+(40479L, 17L)
+____________________________________________________________________________________________________
+Layer (type)                     Output Shape          Param #     Connected to                     
+====================================================================================================
+zeropadding2d_1 (ZeroPadding2D)  (None, 3, 226, 226)   0           zeropadding2d_input_1[0][0]      
+____________________________________________________________________________________________________
+convolution2d_1 (Convolution2D)  (None, 64, 224, 224)  1792        zeropadding2d_1[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_2 (ZeroPadding2D)  (None, 64, 226, 226)  0           convolution2d_1[0][0]            
+____________________________________________________________________________________________________
+convolution2d_2 (Convolution2D)  (None, 64, 224, 224)  36928       zeropadding2d_2[0][0]            
+____________________________________________________________________________________________________
+maxpooling2d_1 (MaxPooling2D)    (None, 64, 112, 112)  0           convolution2d_2[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_3 (ZeroPadding2D)  (None, 64, 114, 114)  0           maxpooling2d_1[0][0]             
+____________________________________________________________________________________________________
+convolution2d_3 (Convolution2D)  (None, 128, 112, 112) 73856       zeropadding2d_3[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_4 (ZeroPadding2D)  (None, 128, 114, 114) 0           convolution2d_3[0][0]            
+____________________________________________________________________________________________________
+convolution2d_4 (Convolution2D)  (None, 128, 112, 112) 147584      zeropadding2d_4[0][0]            
+____________________________________________________________________________________________________
+maxpooling2d_2 (MaxPooling2D)    (None, 128, 56, 56)   0           convolution2d_4[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_5 (ZeroPadding2D)  (None, 128, 58, 58)   0           maxpooling2d_2[0][0]             
+____________________________________________________________________________________________________
+convolution2d_5 (Convolution2D)  (None, 256, 56, 56)   295168      zeropadding2d_5[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_6 (ZeroPadding2D)  (None, 256, 58, 58)   0           convolution2d_5[0][0]            
+____________________________________________________________________________________________________
+convolution2d_6 (Convolution2D)  (None, 256, 56, 56)   590080      zeropadding2d_6[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_7 (ZeroPadding2D)  (None, 256, 58, 58)   0           convolution2d_6[0][0]            
+____________________________________________________________________________________________________
+convolution2d_7 (Convolution2D)  (None, 256, 56, 56)   590080      zeropadding2d_7[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_8 (ZeroPadding2D)  (None, 256, 58, 58)   0           convolution2d_7[0][0]            
+____________________________________________________________________________________________________
+convolution2d_8 (Convolution2D)  (None, 256, 56, 56)   590080      zeropadding2d_8[0][0]            
+____________________________________________________________________________________________________
+maxpooling2d_3 (MaxPooling2D)    (None, 256, 28, 28)   0           convolution2d_8[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_9 (ZeroPadding2D)  (None, 256, 30, 30)   0           maxpooling2d_3[0][0]             
+____________________________________________________________________________________________________
+convolution2d_9 (Convolution2D)  (None, 512, 28, 28)   1180160     zeropadding2d_9[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_10 (ZeroPadding2D) (None, 512, 30, 30)   0           convolution2d_9[0][0]            
+____________________________________________________________________________________________________
+convolution2d_10 (Convolution2D) (None, 512, 28, 28)   2359808     zeropadding2d_10[0][0]           
+____________________________________________________________________________________________________
+zeropadding2d_11 (ZeroPadding2D) (None, 512, 30, 30)   0           convolution2d_10[0][0]           
+____________________________________________________________________________________________________
+convolution2d_11 (Convolution2D) (None, 512, 28, 28)   2359808     zeropadding2d_11[0][0]           
+____________________________________________________________________________________________________
+zeropadding2d_12 (ZeroPadding2D) (None, 512, 30, 30)   0           convolution2d_11[0][0]           
+____________________________________________________________________________________________________
+convolution2d_12 (Convolution2D) (None, 512, 28, 28)   2359808     zeropadding2d_12[0][0]           
+____________________________________________________________________________________________________
+maxpooling2d_4 (MaxPooling2D)    (None, 512, 14, 14)   0           convolution2d_12[0][0]           
+____________________________________________________________________________________________________
+zeropadding2d_13 (ZeroPadding2D) (None, 512, 16, 16)   0           maxpooling2d_4[0][0]             
+____________________________________________________________________________________________________
+convolution2d_13 (Convolution2D) (None, 512, 14, 14)   2359808     zeropadding2d_13[0][0]           
+____________________________________________________________________________________________________
+zeropadding2d_14 (ZeroPadding2D) (None, 512, 16, 16)   0           convolution2d_13[0][0]           
+____________________________________________________________________________________________________
+convolution2d_14 (Convolution2D) (None, 512, 14, 14)   2359808     zeropadding2d_14[0][0]           
+____________________________________________________________________________________________________
+zeropadding2d_15 (ZeroPadding2D) (None, 512, 16, 16)   0           convolution2d_14[0][0]           
+____________________________________________________________________________________________________
+convolution2d_15 (Convolution2D) (None, 512, 14, 14)   2359808     zeropadding2d_15[0][0]           
+____________________________________________________________________________________________________
+zeropadding2d_16 (ZeroPadding2D) (None, 512, 16, 16)   0           convolution2d_15[0][0]           
+____________________________________________________________________________________________________
+convolution2d_16 (Convolution2D) (None, 512, 14, 14)   2359808     zeropadding2d_16[0][0]           
+____________________________________________________________________________________________________
+maxpooling2d_5 (MaxPooling2D)    (None, 512, 7, 7)     0           convolution2d_16[0][0]           
+____________________________________________________________________________________________________
+flatten_1 (Flatten)              (None, 25088)         0           maxpooling2d_5[0][0]             
+____________________________________________________________________________________________________
+sequential_2 (Sequential)        (None, 17)            1558545     dense_3[0][0]                    
+====================================================================================================
+Total params: 21,582,929
+Trainable params: 21,027,601
+Non-trainable params: 555,328
+____________________________________________________________________________________________________
+None
+(0, 'zeropadding2d_1', False)
+(1, 'convolution2d_1', False)
+(2, 'zeropadding2d_2', False)
+(3, 'convolution2d_2', False)
+(4, 'maxpooling2d_1', False)
+(5, 'zeropadding2d_3', False)
+(6, 'convolution2d_3', False)
+(7, 'zeropadding2d_4', False)
+(8, 'convolution2d_4', False)
+(9, 'maxpooling2d_2', False)
+(10, 'zeropadding2d_5', False)
+(11, 'convolution2d_5', False)
+(12, 'zeropadding2d_6', False)
+(13, 'convolution2d_6', True)
+(14, 'zeropadding2d_7', True)
+(15, 'convolution2d_7', True)
+(16, 'zeropadding2d_8', True)
+(17, 'convolution2d_8', True)
+(18, 'maxpooling2d_3', True)
+(19, 'zeropadding2d_9', True)
+(20, 'convolution2d_9', True)
+(21, 'zeropadding2d_10', True)
+(22, 'convolution2d_10', True)
+(23, 'zeropadding2d_11', True)
+(24, 'convolution2d_11', True)
+(25, 'zeropadding2d_12', True)
+(26, 'convolution2d_12', True)
+(27, 'maxpooling2d_4', True)
+(28, 'zeropadding2d_13', True)
+(29, 'convolution2d_13', True)
+(30, 'zeropadding2d_14', True)
+(31, 'convolution2d_14', True)
+(32, 'zeropadding2d_15', True)
+(33, 'convolution2d_15', True)
+(34, 'zeropadding2d_16', True)
+(35, 'convolution2d_16', True)
+(36, 'maxpooling2d_5', True)
+(37, 'flatten_1', True)
+(38, 'sequential_2', True)
+learning rate :5e-05
+Epoch 00000: val_loss improved from inf to 0.09928, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132.h5
+Epoch 00000: val_loss improved from inf to 0.09928, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132_weights_only.h5
+Epoch 00001: val_loss improved from 0.09928 to 0.09780, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132.h5
+Epoch 00001: val_loss improved from 0.09928 to 0.09780, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132_weights_only.h5
+Epoch 00002: val_loss improved from 0.09780 to 0.09358, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132.h5
+Epoch 00002: val_loss improved from 0.09780 to 0.09358, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132_weights_only.h5
+Epoch 00003: val_loss improved from 0.09358 to 0.09134, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132.h5
+Epoch 00003: val_loss improved from 0.09358 to 0.09134, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132_weights_only.h5
+Epoch 00004: val_loss did not improve
+Epoch 00004: val_loss did not improve
+Epoch 00005: val_loss did not improve
+Epoch 00005: val_loss did not improve
+learning rate :5e-06
+Epoch 00000: val_loss improved from 0.09134 to 0.08418, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132.h5
+Epoch 00000: val_loss improved from 0.09134 to 0.08418, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132_weights_only.h5
+Epoch 00001: val_loss improved from 0.08418 to 0.08362, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132.h5
+Epoch 00001: val_loss improved from 0.08418 to 0.08362, saving model to D:/Downloads/amazon/bottleneck/vgg19/frozen13_20170719-113132_weights_only.h5
+Epoch 00002: val_loss did not improve
+Epoch 00002: val_loss did not improve
+Epoch 00003: val_loss did not improve
+Epoch 00003: val_loss did not improve
+vgg19 model training complete. Time taken: 4:18:59.733000
+label:0 threshold:0.12 score:0.910328862617
+label:1 threshold:0.07 score:0.913910131177
+label:2 threshold:0.15 score:0.914045368884
+label:3 threshold:0.32 score:0.916060142633
+label:4 threshold:0.12 score:0.919367286271
+label:5 threshold:0.16 score:0.919444931091
+label:6 threshold:0.13 score:0.920893121321
+label:7 threshold:0.36 score:0.92175441276
+label:8 threshold:0.27 score:0.923469760308
+label:9 threshold:0.11 score:0.924482977215
+label:10 threshold:0.14 score:0.924697884742
+label:11 threshold:0.15 score:0.926162432735
+label:12 threshold:0.17 score:0.927078373183
+label:13 threshold:0.06 score:0.927176514855
+label:14 threshold:0.16 score:0.930707353971
+label:15 threshold:0.16 score:0.931714443097
+label:16 threshold:0.46 score:0.931748943624
+('>>>> Overall precision score over validation set ', 0.87436927504862283)
+('>>>> Overall recall score over validation set ', 0.95841067899491805)
+('>>>> Overall F2 score over validation set ', 0.93174894362445349)
+                label  optimized_threshold
+0          slash_burn                 0.12
+1               clear                 0.07
+2            blooming                 0.15
+3             primary                 0.32
+4              cloudy                 0.12
+5   conventional_mine                 0.16
+6               water                 0.13
+7                haze                 0.36
+8         cultivation                 0.27
+9       partly_cloudy                 0.11
+10     artisinal_mine                 0.14
+11         habitation                 0.15
+12        bare_ground                 0.17
+13          blow_down                 0.06
+14        agriculture                 0.16
+15               road                 0.16
+16  selective_logging                 0.46
+                label    f2  recall  precision  true_sum  predict_sum
+0          slash_burn  0.00    0.00       0.00        24            0
+1               clear  0.98    0.99       0.93      2873         3058
+2            blooming  0.32    0.33       0.26        27           34
+3             primary  0.99    1.00       0.97      3759         3849
+4              cloudy  0.88    0.96       0.66       199          293
+5   conventional_mine  0.30    0.29       0.40         7            5
+6               water  0.84    0.91       0.66       716          985
+7                haze  0.79    0.82       0.68       262          315
+8         cultivation  0.66    0.70       0.54       451          585
+9       partly_cloudy  0.95    0.97       0.85       714          818
+10     artisinal_mine  0.83    0.89       0.66        35           47
+11         habitation  0.81    0.89       0.61       346          506
+12        bare_ground  0.42    0.42       0.39       102          110
+13          blow_down  0.18    0.15       0.40        13            5
+14        agriculture  0.91    0.95       0.76      1251         1565
+15               road  0.88    0.92       0.73       789          992
+16  selective_logging  0.17    0.14       0.57        28            7
+submission file generated: D:/Downloads/amazon/my_submissions/submission_vgg19_20170719-113132.csv

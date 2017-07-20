@@ -61,3 +61,7 @@ aggregate_model_20170622-064531.h5,JAGG_2,<0.911,0.958,0.916,0.826,0.961,0.921,0
 aggregate_model_20170622-224417.h5,JAGG_2,0.905,0.956,0.915,0.814,0.954,0.91,0.809,0 days 01:29:32.672000,4,cfg/23.cfg,['R' 'G' 'B' 'NDVI'],train_set_dim128_rgb_ndvi_ndwi_nir.h5
 aggregate_model_20170623-082557.h5,JAGG_2,0.908,0.957,0.918,0.821,0.957,0.912,0.824,0 days 01:10:49.465000,4,cfg/23.cfg,['R' 'G' 'B' 'NDVI'],train_set_dim128_rgb_ndvi_ndwi_nir.h5
 aggregate_model_20170625-111821.h5,JAGG_2,0.912,0.959,0.914,0.836,0.961,0.918,0.844,0 days 01:01:35.232000,4,cfg/24.cfg,['R' 'G' 'B' 'NDVI'],train_set_dim128_rgb_ndvi_ndwi_nir.h5
+aggregate_model_20170625-224621.h5,JAGG_2,0.902,0.955,0.908,0.819,0.959,0.915,0.835,0 days 01:04:20.274000,4,cfg/24_2.cfg,['R' 'G' 'B' 'NIR'],train_set_dim128_rgb_ndvi_ndwi_nir.h5
+aggregate_model_20170625-235539.h5,EKAMI,0.91,0.959,0.922,0.829,0.962,0.915,0.853,0 days 02:54:45.111000,4,cfg/25.cfg,['R' 'G' 'B' 'NIR'],train_set_dim128_rgb_ndvi_ndwi_nir.h5
+aggregate_model_20170626-025551.h5,EKAMI,0.913,0.962,0.928,0.837,0.963,0.92,0.859,0 days 02:27:06.391000,4,cfg/25_2.cfg,['R' 'G' 'B' 'NDVI'],train_set_dim128_rgb_ndvi_ndwi_nir.h5
+aggregate_model_20170626-052826.h5,EKAMI,0.689,0.905,0.813,0.568,0.905,0.815,0.569,0 days 00:59:27.300000,3,cfg/25_3.cfg,['NDVI' 'NDWI' 'NIR'],train_set_dim128_rgb_ndvi_ndwi_nir.h5

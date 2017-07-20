@@ -78,17 +78,6 @@ def vgg19_model(channel=3, num_classes=17):
 
     # Loads ImageNet pre-trained data
     model.load_weights(imagenet_vgg_weights_file)
-
-    # # Truncate and replace softmax layer for transfer learning
-    # model.layers.pop()
-    # model.outputs = [model.layers[-1].output]
-    # model.layers[-1].outbound_nodes = []
-    # model.add(Dense(num_classes, activation='softmax'))
-
-    # # Learning rate is changed to 0.001
-    # sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
-    # model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
-
     return model
 
 def vgg19_model_fc_truncated (channel=3):
@@ -123,8 +112,11 @@ def vgg19_custom_top_classifier(input_shape, num_classes=None):
     model.add(Dense(num_classes, activation='sigmoid'))  # softmax replace with sigmoid for multiclass multlabel classification
     return model
 
-def vgg19_model_custom_top(channel=3, num_classes=17, num_frozen_layers=38, learning_rate=1e-3):
+def vgg19_model_custom_top(channel=3, num_classes=17, num_frozen_layers=38):
     """
+    WARNING: nested model will prevent Keras from loading model file and weight file properly.
+    I am going with this route because for unknown reason the val_loss is super high going the regular route.
+
     Parameters:
     input_shape: the shape of the bottleneck features : bottleneck_training_data.shape[1:] 
     """
@@ -153,13 +145,8 @@ def freeze_layers(model, num_frozen_layers=38):
         if hasattr(layer, 'trainable'):
             layer.trainable = False
     
-    # use Adam for top classify layer training because we know it works well
-    if (num_frozen_layers >= 38):
-        optimizer = Adam(lr=0.001)
-    else:
-        # TODO try Adam because someone has success with Adam
-        optimizer = Adam(lr=0.0001)
-        #optimizer = SGD(lr=0.001, nesterov=True)
+    optimizer = Adam(lr=0.0001)
+    #optimizer = SGD(lr=0.001, nesterov=True)
     # compile the model (should be done *after* setting layers to non-trainable)
     model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy', 'recall', 'precision'])
     return model

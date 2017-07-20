@@ -27,8 +27,9 @@ def densenet_normalization(im):
 	im[:,:,:,1] = (im[:,:,:,1] - 116.779) * 0.017
 	im[:,:,:,2] = (im[:,:,:,2] - 123.68) * 0.017
 
-# code from : https://github.com/fchollet/deep-learning-models/blob/master/inception_v3.py
 def inceptionv3_normalization(im):
+	# TODO resize to 299 x 299 because the imagenet weights were trained at 299x299
+	# code from : https://github.com/fchollet/deep-learning-models/blob/master/inception_v3.py
 	im /= 255.
 	im -= 0.5
 	im *= 2.

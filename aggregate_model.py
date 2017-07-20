@@ -54,7 +54,7 @@ start_time = datetime.now()
 # In[3]:
 
 config_file = 'cfg/default.cfg'
-#config_file = 'cfg/11_rgb.cfg'
+#config_file = 'cfg/24.cfg'
 
 # command line args processing "python aggregate_model.py cfg/3.cfg"
 if len(sys.argv) > 1 and '.cfg' in sys.argv[1]:
@@ -128,7 +128,8 @@ print(y_train.shape)
 
 # In[6]:
 
-x_train = x_train[:, :, :, data_mask]
+if x_train.shape[3] == 6:
+    x_train = x_train[:, :, :, data_mask]
 
 x_train = x_train.transpose(0,3,1,2)  # https://github.com/fchollet/keras/issues/2681
 print(x_train.shape)
@@ -136,13 +137,12 @@ print(x_train.shape)
 
 # In[7]:
 
-# TODO save the shuffling order to hdf5 so we can recreate the training and validation sets post execution.
-
-# shuffle the samples because 
+# TODO if shuffle, save the shuffling order to hdf5 so we can recreate the training and validation sets post execution.
+# shuffle the samples:
 # 1) the original samples may not be randomized & 
 # 2) to avoid the possiblility of overfitting the validation data while we tune the model
-from sklearn.utils import shuffle
-x_train, y_train = shuffle(x_train, y_train, random_state=0)
+# from sklearn.utils import shuffle
+# x_train, y_train = shuffle(x_train, y_train, random_state=0)
 
 x_train, x_valid, y_train, y_valid = x_train[:split], x_train[split:], y_train[:split], y_train[split:]
 
@@ -185,12 +185,6 @@ if settings.has_option('data', 'single_target'):
     
 score_averaging_method = 'binary' if single_taget_model else 'samples'
 print('score_averaging_method', score_averaging_method)
-
-
-# In[11]:
-
-#image_generator = ScaledDown()
-#print('image generator', image_generator)
 
 
 # In[12]:
@@ -236,29 +230,10 @@ class F2_Validation(k.callbacks.Callback):
         self.f2_measures.append(compute_f2_measure(self.model, self.x_data, self.y_data))
 
 
-# In[15]:
-
-## Record performance metrics at the end of each epoch
-# class PerformanceHistory(k.callbacks.Callback):
-#     def on_train_begin(self, logs={}):
-#         self.train_losses = []
-#         self.val_losses = []
-#         self.train_accuracy = []
-#         self.val_accuracy = []
-
-#     def on_epoch_end(self, epoch, logs={}):
-#         self.train_losses.append(logs.get('loss'))
-#         self.val_losses.append(logs.get('val_loss'))
-#         self.train_accuracy.append(logs.get('acc'))
-#         self.val_accuracy.append(logs.get('val_acc'))
-        
-# perf_history = PerformanceHistory()
-
-
 # In[16]:
 
 # early stopping prevents overfitting on training data
-early_stop = EarlyStopping(monitor='val_loss',patience=3, min_delta=0, verbose=0, mode='auto')  # TODO tune min_delta?
+early_stop = EarlyStopping(monitor='val_loss',patience=2, min_delta=0, verbose=0, mode='auto')
 
 # save only the best model, not the latest epoch model.
 checkpoint = ModelCheckpoint(model_filepath, monitor='val_loss', verbose=1, save_best_only=True)
@@ -286,15 +261,7 @@ kf = KFold(n_splits=5, shuffle=True, random_state=1)
 for learn_rate, epochs in zip(learning_rate_schedule, max_epoch_per_learning_rate):
     print('learning rate :{}'.format(learn_rate))
     model.optimizer.lr.set_value(learn_rate) # https://github.com/fchollet/keras/issues/888
-    # scale down the x values from 0-255 to 0-1
-    #     tmp_history = model.fit(x_train / float(255),
-    #                         y_train,
-    #                         batch_size=batch_size,
-    #                         nb_epoch=epochs,
-    #                         verbose=1,
-    #                         validation_data=(x_valid / float(255), y_valid),
-    #                         callbacks=[f2_score_val, early_stop, checkpoint])
-
+    
     # use our custom generators to perform augmentation
     # TODO split x_train into smaller batches for larger models
     train_gen = custom_gen.trainGen(x_train, y_train, batch_size)
@@ -311,7 +278,7 @@ for learn_rate, epochs in zip(learning_rate_schedule, max_epoch_per_learning_rat
                         nb_epoch=epochs,
                         validation_data=valid_gen,
                         nb_val_samples=number_validations,              
-                        verbose=1,
+                        verbose=0,
                         callbacks=[f2_score_val, early_stop, checkpoint])
     
     for k, v in tmp_history.history.iteritems():
@@ -353,6 +320,9 @@ p_valid = model.predict_generator(val_generator_score_board, number_validations)
 optimized_thresholds = f2_optimized_thresholds(y_valid, p_valid)
 
 y_predictions = (np.array(p_valid) > optimized_thresholds).astype(int)
+
+# save for use in ensembling weight optimization!
+np.save(data_dir + '/temp/valid_set_predictions', y_predictions)
 
 precision_s = precision_score(y_valid, y_predictions, average=score_averaging_method)
 print('>>>> Overall precision score over validation set ' , precision_s)
@@ -422,14 +392,39 @@ plot_file_path = figures_dir + '/stats_' + timestr + '.png'
 trainHistoryPlot(plot_file_path, history, f2_history, prediction_stats_df)
 
 
-# In[28]:
+# In[5]:
 
 if not is_test_set_in_cache(rescaled_dim):
     # populate the test dataset cache
     df_test = pd.read_csv(sample_submission_filepath)
     load_test_set(df_test, rescaled_dim)
 
+
+# In[9]:
+
+## delete me!
+# optimized_thresholds = np.empty(17)
+# optimized_thresholds.fill(0.2)
+# print(optimized_thresholds)
+
+# print(labels)
+
+# print(data_mask)
+# timestr = 'good_test_data'
+
+
+# In[10]:
+
+#model = load_model(data_dir + 'models/aggregate_model_20170625-111821.h5')
+
+
+# In[11]:
+
 real_submission_filepath = data_dir + 'my_submissions/submission_' + timestr + '.csv'
+print(real_submission_filepath)
+
+
+# In[12]:
 
 make_submission(model,
                 optimized_thresholds,
