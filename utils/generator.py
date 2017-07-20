@@ -148,7 +148,6 @@ class BottleNeckImgGenerator(object):
 			yield x_result
 			i += batch_size
 
-
 class CustomImgGenerator(object):
 	""" Generate images in batches.  
 	Usage: pass to Keras fit_generator. 
@@ -177,20 +176,37 @@ class CustomImgGenerator(object):
 	def validationGen(self, x_valid, y_valid, batch_size, scale=True):
 		i = 0
 		limit = x_valid.shape[0]
-		while True:
-			yield x_valid[i: i + batch_size] / float(255) if scale else x_valid[i: i + batch_size], y_valid[i: i + batch_size]
 
-			if i + 2*batch_size > limit:
+		while True:
+			if i+1 >= limit:
 				i = 0
+			if i + batch_size > limit:
+				end = limit
 			else:
-				i += batch_size
+				end = i + batch_size
+
+			x_result = x_valid[i: end].astype(np.float32)
+			if scale:
+				x_result = x_result / float(255)
+
+			yield x_result, y_valid[i: end]
+			i += batch_size
 
 	def testGen(self, x_test, batch_size, scale=True):
 		i = 0
 		limit = x_test.shape[0]
+
 		while True:
-			yield x_test[i: i + batch_size] / float(255) if scale else x_test[i: i + batch_size]
-			if i + 2*batch_size > limit:
+			if i+1 >= limit:
 				i = 0
+			if i + batch_size > limit:
+				end = limit
 			else:
-				i += batch_size
+				end = i + batch_size
+
+			x_result = x_test[i: end].astype(np.float32)
+			if scale:
+				x_result = x_result / float(255)
+
+			yield x_result
+			i += batch_size

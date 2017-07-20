@@ -24,8 +24,8 @@ def make_submission(model, thresholds, rescale_dim, labels, sample_submission_fi
 	print('submission file generated: {}'.format(real_submission_filepath))
 
 def prediction_dataframe(model, thresholds, labels, test_set, generator, probability_prediction_filepath):
-	# batch_size is limited by amount of RAM in computer and RAM in GPU.  Set smaller batch size for bigger models like ResNet50.
-	batch_size = 64
+	# batch_size is limited by amount of RAM in computer and RAM in GPU.  Set smaller batch size for bigger models like ResNet50 and VGG19.
+	batch_size = 16 #64
 	probability_prediction = predict_probabilities(test_set, model, batch_size, generator)
 	# backup the probabilities for easy result ensembling
 	np.save(probability_prediction_filepath, probability_prediction)

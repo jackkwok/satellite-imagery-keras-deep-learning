@@ -5,7 +5,7 @@ from utils.generator import *
 
 def predict_with_optimal_thresholds(x_valid, y_valid, generator, model):
 	"""Perform F2 Threshold leaning on validation data"""
-	batch_size = 32
+	batch_size = 16
 	valid_gen = generator.validationGen(x_valid, y_valid, batch_size)
 	p_valid = model.predict_generator(valid_gen, x_valid.shape[0])
 
@@ -19,8 +19,8 @@ def predict_with_optimal_thresholds(x_valid, y_valid, generator, model):
 	recall_s = recall_score(y_valid, y_predictions, average='samples')
 	print('>>>> Overall recall score over validation set ' , recall_s)
 
-	# F2 score, which gives twice the weight to recall
-	# 'samples' is what the evaluation criteria is for the contest
+	# F2 score, which gives twice the weight to recall over precision
+	# 'samples' is the evaluation criteria is for the contest
 	f2_score = fbeta_score(y_valid, y_predictions, beta=2, average='samples')
 	print('>>>> Overall F2 score over validation set ' , f2_score)
 
