@@ -11,25 +11,12 @@ from utils.f2thresholdfinder import *
 submission_dir = 'D:/Downloads/amazon/my_submissions/'
 ensemble_output_dir = submission_dir + 'ensemble/'
 
-default_equal_weights = [
-	0.333,
-	0.333,
-	0.333,
-	#0.2
-]
-
-# better models should be given higher weights. weights must add up to 1.0
-weights_combo_1 = [
-	0.3,
-	0.3,
-	0.2,
-	0.2
-]
-
 # Alternatively, average the floating point numbers from 2 predictions before doing thresholding.
 def generate_ensemble_submission(ensemble_submission_filename, submission_files, weights):
 	""" 
-		Generate a submission file based on majority vote amongst the submission files. 
+		Generate a submission file based on majorities votes where votes have different weights.
+		Better models should be given higher weights. 
+		Weights must add up to 1.0.
 		Each submission is weighted according to its performance / confidence.
 	"""
 	print('ensembling kaggle submission files: {}'.format(submission_files))
@@ -76,11 +63,6 @@ def eval_optimal_ensemble_weights(weights_combos, y_predictions, y_valid, optimi
 
 	score = 0
 	result = None
-
-	# y_predictions = []
-	# for model, generator in zip(models, generators):
-	# 	y_predict, thresholds = predict_with_optimal_thresholds(x_valid, y_valid, generator, model)
-	# 	y_predictions.append(y_predict)
 
 	for weight_combo in weights_combos:
 		curr_score = optimizer_func(weight_combo, y_valid, y_predictions)

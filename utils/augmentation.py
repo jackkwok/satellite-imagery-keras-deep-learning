@@ -27,6 +27,7 @@ def apply_augment_sequence(images):
 	return seq.augment_images(images)
 
 # Test Time Augmentation (TTA)
+# 8 different ways to apply flip and rotate
 def apply_tta_fliplr(images):
 	seq = iaa.Fliplr(1.0)
 	return seq.augment_images(images)
@@ -39,6 +40,32 @@ def apply_tta_flipboth(images):
 	seq = iaa.Sequential(
 		[
 			iaa.Fliplr(1.0),
+			iaa.Flipud(1.0)
+		],
+		random_order=False)
+	return seq.augment_images(images)
+
+def apply_tta_rotate90(images):
+	seq = iaa.Affine(rotate=90)
+	return seq.augment_images(images)
+
+def apply_tta_rotate270(images):
+	seq = iaa.Affine(rotate=270)
+	return seq.augment_images(images)
+
+def apply_tta_rotate90flip(images):
+	seq = iaa.Sequential(
+		[
+			iaa.Affine(rotate=90),
+			iaa.Flipud(1.0)
+		],
+		random_order=False)
+	return seq.augment_images(images)
+
+def apply_tta_rotate270flip(images):
+	seq = iaa.Sequential(
+		[
+			iaa.Affine(rotate=270),
 			iaa.Flipud(1.0)
 		],
 		random_order=False)

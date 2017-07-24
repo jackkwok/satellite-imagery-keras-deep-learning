@@ -26,8 +26,7 @@ def predict_with_optimal_thresholds(x_valid, y_valid, generator, model):
 
 	return y_predictions, optimized_thresholds
 
-
-# Is this mathematically sound?
+# WARNING: F2 optimization could decrease performance if test data has different label distributions as train data.
 # Code adapted from: https://www.kaggle.com/c/planet-understanding-the-amazon-from-space/discussion/32475
 def f2_optimized_thresholds(y_true, y_pred, verbose=True, resolution=100):
   def score_for_threshold(x):

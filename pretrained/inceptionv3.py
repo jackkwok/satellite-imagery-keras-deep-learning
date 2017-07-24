@@ -22,8 +22,9 @@ def inceptionv3_custom_top_classifier(input_shape, num_classes=17):
 	model.add(Dense(num_classes, activation='sigmoid'))  # softmax replaced with sigmoid for multiclass multlabel classification
 	return model
 
+# input shape for imagenet is 299x299
 def inceptionv3_model_custom_top(num_classes=17, num_frozen_layers=217):
-	inceptionv3_model = applications.InceptionV3(weights='imagenet', input_shape=(3, 224, 224), include_top=False)
+	inceptionv3_model = applications.InceptionV3(weights='imagenet', input_shape=(3, 299, 299), include_top=False)
 	
 	x = inceptionv3_model.output
 	x = Flatten()(x)
