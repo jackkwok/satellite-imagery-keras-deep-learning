@@ -18,14 +18,3 @@ def duplicate_train_samples(train_X, train_Y, dup_target_y, multiplier=2):
 		train_Y = np.concatenate((train_Y, additional_Y), axis=0)
 
 	return train_X, train_Y
-
-# def duplicate_samples(train_X, train_Y, indexes_to_duplicate, multiplier=2):
-# 	"""duplicate samples with indexes. append to end of input arrays"""
-# 	additional_X = train_X[indexes_to_duplicate]
-# 	additional_Y = train_Y[indexes_to_duplicate]
-
-# 	for i in range(1, multiplier):
-# 		train_X = np.concatenate((train_X, additional_X), axis=0)
-# 		train_Y = np.concatenate((train_Y, additional_Y), axis=0)
-
-# 	return train_X, train_Y
